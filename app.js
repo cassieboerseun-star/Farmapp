@@ -2,7 +2,20 @@
    FARM ERP – DELETE SAFE
 ========================= */
 
-let db = JSON.parse(localStorage.getItem("farmdb")) || {
+let db = JSON.parse(localStorage.getItem("farmdb")) || {// 🔧 AUTO-FIX OLD INVOICES (MIGRATION)
+db.invoices.forEach(inv => {
+  if (inv.balance === undefined) {
+    inv.paid = inv.paid || 0;
+    inv.payments = inv.payments || [];
+    inv.balance = inv.total - inv.paid;
+
+    if (inv.paid === 0) inv.status = "UNPAID";
+    else if (inv.balance === 0) inv.status = "PAID";
+    else inv.status = "PARTIAL";
+  }
+});
+save();
+
   cows: [], sheep: [], broilers: [], worms: [],
   invoices: [], expenses: []
 };
