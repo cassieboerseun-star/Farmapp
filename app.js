@@ -78,13 +78,25 @@ function animalList(type) {
     <button onclick="show('animals')">⬅ Back</button>
   `;
 }
-
 function addAnimal(type) {
-  let n=name.value,w=Number(weight.value);
-  if(!n||!w) return alert("Missing");
-  db[type].push({name:n,history:[{date:today(),weight:w}]});
-  save(); animalList(type);
+  let n = document.getElementById("name").value;
+  let w = Number(document.getElementById("weight").value);
+
+  if (!n || !w) {
+    alert("Enter name and weight");
+    return;
+  }
+
+  db[type].push({
+    name: n,
+    history: [{ date: today(), weight: w }]
+  });
+
+  save();
+  animalList(type);
 }
+
+
 
 function viewAnimal(type,i) {
   let a=db[type][i],h=a.history;
