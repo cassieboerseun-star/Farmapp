@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – CORE RECOVERY
+   FARM ERP – CORE + EDIT + REPORTS
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -9,6 +9,8 @@ let db = JSON.parse(localStorage.getItem("farmdb")) || {
 
 function save(){ localStorage.setItem("farmdb", JSON.stringify(db)); }
 function today(){ return new Date().toISOString().split("T")[0]; }
+function month(d){ return d.slice(0,7); }
+function year(d){ return d.slice(0,4); }
 
 /* =========================
    NAVIGATION
@@ -24,6 +26,7 @@ function show(screen){
       <div class="card">Expenses: ${exp}</div>
       <div class="card"><b>Net Profit: ${income-exp}</b></div>
 
+      <button onclick="show('reports')">📊 Reports</button>
       <button onclick="backupData()">⬇ Backup</button>
       <button onclick="openRestore()">⬆ Restore</button>
     `;
@@ -46,7 +49,7 @@ function show(screen){
       <h3>Invoices</h3>
       ${db.invoices.map((i,idx)=>`
         <div class="card" onclick="viewInvoice(${idx})">
-          ${i.number} | ${i.status} | Bal: ${i.balance}
+          ${i.number} | ${i.status} | Balance: ${i.balance}
         </div>`).join("")}
 
       <h3>Expenses</h3>
@@ -54,6 +57,16 @@ function show(screen){
         <div class="card" onclick="editExpense(${i})">
           ${e.date} – ${e.category}: ${e.amount}
         </div>`).join("")}
+    `;
+  }
+
+  if(screen==="reports"){
+    document.getElementById("screen").innerHTML=`
+      <h2>Reports</h2>
+      <button onclick="monthlyReport()">📅 Monthly Report</button>
+      <button onclick="annualReport()">📆 Annual Report</button>
+      <button onclick="expenseReport()">💸 Expense Breakdown</button>
+      <button onclick="show('dashboard')">⬅ Back</button>
     `;
   }
 }
@@ -115,7 +128,7 @@ function weightChart(h){
 }
 
 /* =========================
-   FINANCE (SAFE)
+   INVOICES (EDITABLE)
 ========================= */
 
 function newInvoice(){
@@ -127,14 +140,13 @@ function newInvoice(){
 }
 
 function saveInvoice(){
-  let amt=Number(amt.value);
-  if(!amt) return alert("Enter amount");
-
+  let a=Number(amt.value);
+  if(!a) return alert("Enter amount");
   db.invoices.push({
     number:"INV-"+(db.invoices.length+1),
-    total:amt,
+    total:a,
     paid:0,
-    balance:amt,
+    balance:a,
     payments:[],
     status:"UNPAID"
   });
@@ -144,14 +156,20 @@ function saveInvoice(){
 function viewInvoice(i){
   let inv=db.invoices[i];
   document.getElementById("screen").innerHTML=`
-    <h3>${inv.number}</h3>
-    <div class="card">Total: ${inv.total}</div>
+    <h3>Edit Invoice</h3>
+
+    <input id="invnum" value="${inv.number}">
+    <input id="invtotal" type="number" value="${inv.total}">
+
     <div class="card">Paid: ${inv.paid}</div>
     <div class="card">Balance: ${inv.balance}</div>
     <div class="card">Status: ${inv.status}</div>
 
+    <button onclick="saveInvoiceEdit(${i})">💾 Save Invoice</button>
+
+    <hr>
     <input id="pay" type="number" placeholder="Payment">
-    <button onclick="addPayment(${i})">Add Payment</button>
+    <button onclick="addPayment(${i})">➕ Add Payment</button>
 
     ${inv.payments.map(p=>`
       <div class="card">${p.date}: ${p.amount}</div>
@@ -161,11 +179,21 @@ function viewInvoice(i){
   `;
 }
 
+function saveInvoiceEdit(i){
+  let inv=db.invoices[i];
+  let t=Number(invtotal.value);
+  if(t<inv.paid) return alert("Total < paid");
+  inv.number=invnum.value;
+  inv.total=t;
+  inv.balance=inv.total-inv.paid;
+  inv.status=inv.paid===0?"UNPAID":inv.balance===0?"PAID":"PARTIAL";
+  save(); viewInvoice(i);
+}
+
 function addPayment(i){
   let a=Number(pay.value);
-  if(!a||a>db.invoices[i].balance) return alert("Invalid payment");
-
   let inv=db.invoices[i];
+  if(!a||a>inv.balance) return alert("Invalid payment");
   inv.payments.push({date:today(),amount:a});
   inv.paid+=a;
   inv.balance=inv.total-inv.paid;
@@ -174,7 +202,7 @@ function addPayment(i){
 }
 
 /* =========================
-   EXPENSES
+   EXPENSES (EDITABLE)
 ========================= */
 
 function newExpense(){
@@ -198,7 +226,7 @@ function editExpense(i){
     <input id="ed" value="${e.date}">
     <input id="ec" value="${e.category}">
     <input id="ea" type="number" value="${e.amount}">
-    <button onclick="saveExpenseEdit(${i})">Save</button>
+    <button onclick="saveExpenseEdit(${i})">💾 Save</button>
     <button onclick="show('finance')">⬅ Back</button>
   `;
 }
@@ -207,6 +235,59 @@ function saveExpenseEdit(i){
   let e=db.expenses[i];
   e.date=ed.value; e.category=ec.value; e.amount=Number(ea.value);
   save(); show("finance");
+}
+
+/* =========================
+   REPORTS
+========================= */
+
+function monthlyReport(){
+  let inc={},exp={};
+  db.invoices.forEach(i=>i.payments.forEach(p=>{
+    let k=month(p.date); inc[k]=(inc[k]||0)+p.amount;
+  }));
+  db.expenses.forEach(e=>{
+    let k=month(e.date); exp[k]=(exp[k]||0)+e.amount;
+  });
+
+  document.getElementById("screen").innerHTML=`
+    <h3>Monthly Report</h3>
+    ${Object.keys({...inc,...exp}).sort().map(k=>`
+      <div class="card">${k} | Income: ${inc[k]||0} | Expenses: ${exp[k]||0} | Net: ${(inc[k]||0)-(exp[k]||0)}</div>
+    `).join("") || "<div class='card'>No data</div>"}
+    <button onclick="window.print()">🖨 Print</button>
+    <button onclick="show('reports')">⬅ Back</button>
+  `;
+}
+
+function annualReport(){
+  let inc={},exp={};
+  db.invoices.forEach(i=>i.payments.forEach(p=>{
+    let k=year(p.date); inc[k]=(inc[k]||0)+p.amount;
+  }));
+  db.expenses.forEach(e=>{
+    let k=year(e.date); exp[k]=(exp[k]||0)+e.amount;
+  });
+
+  document.getElementById("screen").innerHTML=`
+    <h3>Annual Report</h3>
+    ${Object.keys({...inc,...exp}).sort().map(k=>`
+      <div class="card">${k} | Income: ${inc[k]||0} | Expenses: ${exp[k]||0} | Net: ${(inc[k]||0)-(exp[k]||0)}</div>
+    `).join("") || "<div class='card'>No data</div>"}
+    <button onclick="window.print()">🖨 Print</button>
+    <button onclick="show('reports')">⬅ Back</button>
+  `;
+}
+
+function expenseReport(){
+  let c={};
+  db.expenses.forEach(e=>c[e.category]=(c[e.category]||0)+e.amount);
+  document.getElementById("screen").innerHTML=`
+    <h3>Expense Breakdown</h3>
+    ${Object.keys(c).map(k=>`<div class="card">${k}: ${c[k]}</div>`).join("")}
+    <button onclick="window.print()">🖨 Print</button>
+    <button onclick="show('reports')">⬅ Back</button>
+  `;
 }
 
 /* =========================
