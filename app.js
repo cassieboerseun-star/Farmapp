@@ -1,48 +1,24 @@
-/* ======================
-   FARM ERP – PHASE A
-   Core Business Layer
-====================== */
-
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
   cows: [], sheep: [], broilers: [], worms: [],
-  customers: [],
-  invoices: [],
-  expenses: [],
-  settings: {
-    mpesaTill: "123456",
-    bankName: "My Bank",
-    bankAccount: "0123456789"
-  }
+  customers: [], invoices: [], expenses: []
 };
 
-  
-};
+function save(){ localStorage.setItem("farmdb", JSON.stringify(db)); }
+function today(){ return new Date().toISOString().split("T")[0]; }
 
-function save() {
-  localStorage.setItem("farmdb", JSON.stringify(db));
-}
-
-function today() {
-  return new Date().toISOString().split("T")[0];
-}
-
-/* ---------- NAV ---------- */
-
-function show(screen) {
-  if (screen === "dashboard") {
-    let income = db.invoices.reduce((s,i)=>s+i.paid,0);
-    let expenses = db.expenses.reduce((s,e)=>s+e.amount,0);
-    let net = income - expenses;
-
-    document.getElementById("screen").innerHTML = `
+function show(screen){
+  if(screen==="dashboard"){
+    let income=db.invoices.reduce((s,i)=>s+i.paid,0);
+    let exp=db.expenses.reduce((s,e)=>s+e.amount,0);
+    document.getElementById("screen").innerHTML=`
       <div class="card">Income: ${income}</div>
-      <div class="card">Expenses: ${expenses}</div>
-      <div class="card"><b>Net Profit: ${net}</b></div>
+      <div class="card">Expenses: ${exp}</div>
+      <div class="card"><b>Net: ${income-exp}</b></div>
     `;
   }
 
-  if (screen === "animals") {
-    document.getElementById("screen").innerHTML = `
+  if(screen==="animals"){
+    document.getElementById("screen").innerHTML=`
       <button onclick="animalList('cows')">🐄 Cows</button>
       <button onclick="animalList('sheep')">🐑 Sheep</button>
       <button onclick="animalList('broilers')">🐔 Broilers</button>
@@ -50,209 +26,87 @@ function show(screen) {
     `;
   }
 
-  if (screen === "finance") {
-    document.getElementById("screen").innerHTML = `
+  if(screen==="finance"){
+    document.getElementById("screen").innerHTML=`
       <button onclick="newInvoice()">➕ New Invoice</button>
       <button onclick="newExpense()">➕ New Expense</button>
 
       <h3>Invoices</h3>
-      ${db.invoices.map((i,idx)=>`
-        <div class="card" onclick="viewInvoice(${idx})">
-          ${i.number} – ${i.customer} – ${i.status}
+      ${db.invoices.map((i,x)=>`
+        <div class="card" onclick="viewInvoice(${x})">
+          ${i.number} – ${i.status}
         </div>`).join("")}
 
       <h3>Expenses</h3>
       ${db.expenses.map(e=>`
-        <div class="card">${e.date} – ${e.category}: ${e.amount}</div>
+        <div class="card">${e.category}: ${e.amount}</div>
       `).join("")}
     `;
   }
 }
 
-/* ---------- ANIMALS ---------- */
-
-function animalList(type) {
-  document.getElementById("screen").innerHTML = `
+/* ANIMALS */
+function animalList(type){
+  document.getElementById("screen").innerHTML=`
     <h2>${type.toUpperCase()}</h2>
-    <input id="name" placeholder="ID / Name">
-    <input id="weight" type="number" placeholder="Weight (kg)">
+    <input id="name" placeholder="Name">
+    <input id="weight" type="number" placeholder="Weight">
     <button onclick="addAnimal('${type}')">Add</button>
-
-    ${db[type].map((a,i)=>`
-      <div class="card" onclick="viewAnimal('${type}',${i})">
-        ${a.name} – ${a.history[a.history.length-1].weight} kg
-      </div>`).join("")}
-
+    ${db[type].map(a=>`<div class="card">${a.name}</div>`).join("")}
     <button onclick="show('animals')">⬅ Back</button>
   `;
 }
-function addAnimal(type) {
-  let n = document.getElementById("name").value;
-  let w = Number(document.getElementById("weight").value);
 
-  if (!n || !w) {
-    alert("Enter name and weight");
-    return;
-  }
-
-  db[type].push({
-    name: n,
-    history: [{ date: today(), weight: w }]
-  });
-
-  save();
-  animalList(type);
+function addAnimal(type){
+  let n=document.getElementById("name").value;
+  let w=Number(document.getElementById("weight").value);
+  if(!n||!w) return alert("Missing");
+  db[type].push({name:n,history:[{date:today(),weight:w}]});
+  save(); animalList(type);
 }
 
-
-
-function viewAnimal(type,i) {
-  let a=db[type][i],h=a.history;
-  document.getElementById("screen").innerHTML = `
-    <h2>${a.name}</h2>
-    <div class="card">Latest: ${h[h.length-1].weight} kg</div>
-    <input id="nw" type="number" placeholder="New weight">
-    <button onclick="addWeight('${type}',${i})">Add Weight</button>
-   <h3>Weight History</h3>
-${h.map(x=>`<div class="card">${x.date}: ${x.weight} kg</div>`).join("")}
-
-<h3>Weight Chart</h3>
-${weightChart(h)}
-
-<button onclick="animalList('${type}')">⬅ Back</button>
-
-  `;
-}
-
-function addWeight(type,i) {
-  let w=Number(nw.value);
-  if(!w) return;
-  db[type][i].history.push({date:today(),weight:w});
-  save(); viewAnimal(type,i);
-}
-
-/* ---------- INVOICES ---------- */
-
-function newInvoice() {
-  document.getElementById("screen").innerHTML = `
-    <input id="cust" placeholder="Customer name">
+/* FINANCE */
+function newInvoice(){
+  document.getElementById("screen").innerHTML=`
     <input id="amt" type="number" placeholder="Amount">
-    <button onclick="saveInvoice()">Save Invoice</button>
+    <button onclick="saveInvoice()">Save</button>
     <button onclick="show('finance')">⬅ Back</button>
   `;
 }
 
-function saveInvoice() {
-  let c=cust.value,a=Number(amt.value);
-  if(!c||!a) return alert("Missing");
-
-  let year=new Date().getFullYear();
-  let num=`${year}-${db.invoices.length+1}`;
-
+function saveInvoice(){
+  let a=Number(document.getElementById("amt").value);
+  if(!a) return;
   db.invoices.push({
-    number:num,
-    customer:c,
-    total:a,
-    paid:0,
-    status:"UNPAID"
+    number:"INV-"+(db.invoices.length+1),
+    total:a, paid:0, status:"UNPAID"
   });
-
-  if(!db.customers.includes(c)) db.customers.push(c);
   save(); show("finance");
 }
 
-function viewInvoice(i) {
-  let inv = db.invoices[i];
-  document.getElementById("screen").innerHTML = `
-    <h3>Invoice ${inv.number}</h3>
-
-    <div class="card">Customer: ${inv.customer}</div>
-    <div class="card">Total: ${inv.total}</div>
-    <div class="card">Paid: ${inv.paid}</div>
-    <div class="card">Status: ${inv.status}</div>
-
-    <input id="pay" type="number" placeholder="Payment amount">
-    <button onclick="addPayment(${i})">Add Payment</button>
-
-    <h3>Pay via QR</h3>
-    <div class="card">
-      📱 M-Pesa Till: <b>${db.settings.mpesaTill}</b><br>
-      Ref: <b>${inv.number}</b>
-    </div>
-
-    <div class="card">
-      🏦 Bank: <b>${db.settings.bankName}</b><br>
-      Acc: <b>${db.settings.bankAccount}</b><br>
-      Ref: <b>${inv.number}</b>
-    </div>
-
-    <button onclick="show('finance')">⬅ Back</button>
-  `;
-}
-
-
-function addPayment(i) {
-  let p=Number(pay.value);
-  if(!p) return;
+function viewInvoice(i){
   let inv=db.invoices[i];
-  inv.paid+=p;
-  inv.status=inv.paid>=inv.total?"PAID":"PARTIAL";
-  save(); viewInvoice(i);
-}
-
-/* ---------- EXPENSES ---------- */
-
-function newExpense() {
-  document.getElementById("screen").innerHTML = `
-    <input id="cat" placeholder="Category (feed, vet, fuel)">
-    <input id="amt" type="number" placeholder="Amount">
-    <button onclick="saveExpense()">Save Expense</button>
+  document.getElementById("screen").innerHTML=`
+    <div class="card">Invoice ${inv.number}</div>
+    <div class="card">Total: ${inv.total}</div>
     <button onclick="show('finance')">⬅ Back</button>
   `;
 }
 
-function saveExpense() {
+function newExpense(){
+  document.getElementById("screen").innerHTML=`
+    <input id="cat" placeholder="Category">
+    <input id="amt" type="number" placeholder="Amount">
+    <button onclick="saveExpense()">Save</button>
+    <button onclick="show('finance')">⬅ Back</button>
+  `;
+}
+
+function saveExpense(){
   let c=cat.value,a=Number(amt.value);
   if(!c||!a) return;
-  db.expenses.push({date:today(),category:c,amount:a});
+  db.expenses.push({category:c,amount:a});
   save(); show("finance");
-}
-function weightChart(history) {
-  let max = Math.max(...history.map(h => h.weight));
-  return history.map(h => {
-    let width = Math.max(10, (h.weight / max) * 100);
-    return `
-      <div style="
-        background:#2563eb;
-        color:white;
-        margin:4px 0;
-        padding:4px;
-        width:${width}%;
-        border-radius:6px;">
-        ${h.date}: ${h.weight} kg
-      </div>`;
-  }).join("");
-}
-function profitChart() {
-  let income = db.invoices.reduce((s,i)=>s+i.paid,0);
-  let expenses = db.expenses.reduce((s,e)=>s+e.amount,0);
-  let max = Math.max(income, expenses, 1);
-
-  return `
-    <h3>Profit Chart</h3>
-    <div style="background:#16a34a;color:white;padding:6px;width:${income/max*100}%">
-      Income: ${income}
-    </div>
-    <div style="background:#dc2626;color:white;padding:6px;width:${expenses/max*100}%">
-      Expenses: ${expenses}
-    </div>
-  `;
 }
 
 show("dashboard");
-document.getElementById("screen").innerHTML = `
-  <div class="card">Income: ${income}</div>
-  <div class="card">Expenses: ${expenses}</div>
-  <div class="card"><b>Net Profit: ${net}</b></div>
-  ${profitChart()}
-`;
