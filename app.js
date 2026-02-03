@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – CORE + EDIT + REPORTS
+   FARM ERP – DELETE SAFE
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -72,7 +72,7 @@ function show(screen){
 }
 
 /* =========================
-   ANIMALS
+   ANIMALS (DELETE ENABLED)
 ========================= */
 
 function animalList(type){
@@ -102,14 +102,26 @@ function viewAnimal(type,i){
   let a=db[type][i],h=a.history;
   document.getElementById("screen").innerHTML=`
     <h2>${a.name}</h2>
+
     <input id="nw" type="number" placeholder="New weight">
     <button onclick="addWeight('${type}',${i})">Add Weight</button>
 
     ${h.map(x=>`<div class="card">${x.date}: ${x.weight} kg</div>`).join("")}
     ${weightChart(h)}
 
+    <button onclick="deleteAnimal('${type}',${i})" style="background:#dc2626;color:white">
+      🗑 Delete Animal
+    </button>
+
     <button onclick="animalList('${type}')">⬅ Back</button>
   `;
+}
+
+function deleteAnimal(type,i){
+  if(!confirm("Delete this animal permanently?")) return;
+  db[type].splice(i,1);
+  save();
+  animalList(type);
 }
 
 function addWeight(type,i){
@@ -128,7 +140,7 @@ function weightChart(h){
 }
 
 /* =========================
-   INVOICES (EDITABLE)
+   INVOICES (SAFE DELETE)
 ========================= */
 
 function newInvoice(){
@@ -165,18 +177,29 @@ function viewInvoice(i){
     <div class="card">Balance: ${inv.balance}</div>
     <div class="card">Status: ${inv.status}</div>
 
-    <button onclick="saveInvoiceEdit(${i})">💾 Save Invoice</button>
+    <button onclick="saveInvoiceEdit(${i})">💾 Save</button>
+
+    ${inv.status==="UNPAID" ? `
+      <button onclick="deleteInvoice(${i})" style="background:#dc2626;color:white">
+        🗑 Delete Invoice
+      </button>` : ""}
 
     <hr>
     <input id="pay" type="number" placeholder="Payment">
     <button onclick="addPayment(${i})">➕ Add Payment</button>
 
     ${inv.payments.map(p=>`
-      <div class="card">${p.date}: ${p.amount}</div>
-    `).join("")}
+      <div class="card">${p.date}: ${p.amount}</div>`).join("")}
 
     <button onclick="show('finance')">⬅ Back</button>
   `;
+}
+
+function deleteInvoice(i){
+  if(!confirm("Delete unpaid invoice?")) return;
+  db.invoices.splice(i,1);
+  save();
+  show("finance");
 }
 
 function saveInvoiceEdit(i){
@@ -202,7 +225,7 @@ function addPayment(i){
 }
 
 /* =========================
-   EXPENSES (EDITABLE)
+   EXPENSES (DELETE)
 ========================= */
 
 function newExpense(){
@@ -226,9 +249,21 @@ function editExpense(i){
     <input id="ed" value="${e.date}">
     <input id="ec" value="${e.category}">
     <input id="ea" type="number" value="${e.amount}">
+
     <button onclick="saveExpenseEdit(${i})">💾 Save</button>
+    <button onclick="deleteExpense(${i})" style="background:#dc2626;color:white">
+      🗑 Delete Expense
+    </button>
+
     <button onclick="show('finance')">⬅ Back</button>
   `;
+}
+
+function deleteExpense(i){
+  if(!confirm("Delete this expense?")) return;
+  db.expenses.splice(i,1);
+  save();
+  show("finance");
 }
 
 function saveExpenseEdit(i){
