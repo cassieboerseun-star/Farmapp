@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – FINAL + REPORTS FIXED
+   FARM ERP – CORE RECOVERY
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -9,8 +9,6 @@ let db = JSON.parse(localStorage.getItem("farmdb")) || {
 
 function save(){ localStorage.setItem("farmdb", JSON.stringify(db)); }
 function today(){ return new Date().toISOString().split("T")[0]; }
-function month(d){ return d.slice(0,7); }
-function year(d){ return d.slice(0,4); }
 
 /* =========================
    NAVIGATION
@@ -26,7 +24,6 @@ function show(screen){
       <div class="card">Expenses: ${exp}</div>
       <div class="card"><b>Net Profit: ${income-exp}</b></div>
 
-      <button onclick="show('reports')">📊 Reports</button>
       <button onclick="backupData()">⬇ Backup</button>
       <button onclick="openRestore()">⬆ Restore</button>
     `;
@@ -59,113 +56,193 @@ function show(screen){
         </div>`).join("")}
     `;
   }
-
-  if(screen==="reports"){
-    document.getElementById("screen").innerHTML=`
-      <h2>Reports</h2>
-      <button onclick="monthlyReport()">📅 Monthly Report</button>
-      <button onclick="annualReport()">📆 Annual Report</button>
-      <button onclick="expenseReport()">💸 Expense Breakdown</button>
-      <button onclick="show('dashboard')">⬅ Back</button>
-    `;
-  }
 }
 
 /* =========================
-   REPORTS (FIXED)
+   ANIMALS
 ========================= */
 
-function monthlyReport(){
-  let incomeByMonth = {};
-  let expenseByMonth = {};
-
-  // income
-  db.invoices.forEach(inv=>{
-    if(inv.payments && inv.payments.length){
-      inv.payments.forEach(p=>{
-        let k = month(p.date);
-        incomeByMonth[k] = (incomeByMonth[k]||0) + p.amount;
-      });
-    }
-  });
-
-  // expenses
-  db.expenses.forEach(e=>{
-    let k = month(e.date);
-    expenseByMonth[k] = (expenseByMonth[k]||0) + e.amount;
-  });
-
-  let months = Object.keys({...incomeByMonth, ...expenseByMonth}).sort();
-
+function animalList(type){
   document.getElementById("screen").innerHTML=`
-    <h3>Monthly Profit Report</h3>
-    ${months.map(m=>{
-      let inc = incomeByMonth[m]||0;
-      let exp = expenseByMonth[m]||0;
-      return `<div class="card">
-        ${m} | Income: ${inc} | Expenses: ${exp} | Net: ${inc-exp}
-      </div>`;
-    }).join("") || "<div class='card'>No data yet</div>"}
+    <h2>${type.toUpperCase()}</h2>
+    <input id="name" placeholder="Animal ID / Name">
+    <input id="weight" type="number" placeholder="Weight (kg)">
+    <button onclick="addAnimal('${type}')">Add</button>
 
-    <button onclick="window.print()">🖨 Print</button>
-    <button onclick="show('reports')">⬅ Back</button>
+    ${db[type].map((a,i)=>`
+      <div class="card" onclick="viewAnimal('${type}',${i})">
+        ${a.name} – ${a.history[a.history.length-1].weight} kg
+      </div>`).join("")}
+
+    <button onclick="show('animals')">⬅ Back</button>
   `;
 }
 
-function annualReport(){
-  let incomeByYear = {};
-  let expenseByYear = {};
+function addAnimal(type){
+  let n=name.value,w=Number(weight.value);
+  if(!n||!w) return alert("Enter name and weight");
+  db[type].push({name:n,history:[{date:today(),weight:w}]});
+  save(); animalList(type);
+}
 
-  db.invoices.forEach(inv=>{
-    if(inv.payments && inv.payments.length){
-      inv.payments.forEach(p=>{
-        let k = year(p.date);
-        incomeByYear[k] = (incomeByYear[k]||0) + p.amount;
-      });
-    }
-  });
-
-  db.expenses.forEach(e=>{
-    let k = year(e.date);
-    expenseByYear[k] = (expenseByYear[k]||0) + e.amount;
-  });
-
-  let years = Object.keys({...incomeByYear, ...expenseByYear}).sort();
-
+function viewAnimal(type,i){
+  let a=db[type][i],h=a.history;
   document.getElementById("screen").innerHTML=`
-    <h3>Annual Summary</h3>
-    ${years.map(y=>{
-      let inc = incomeByYear[y]||0;
-      let exp = expenseByYear[y]||0;
-      return `<div class="card">
-        ${y} | Income: ${inc} | Expenses: ${exp} | Net: ${inc-exp}
-      </div>`;
-    }).join("") || "<div class='card'>No data yet</div>"}
+    <h2>${a.name}</h2>
+    <input id="nw" type="number" placeholder="New weight">
+    <button onclick="addWeight('${type}',${i})">Add Weight</button>
 
-    <button onclick="window.print()">🖨 Print</button>
-    <button onclick="show('reports')">⬅ Back</button>
+    ${h.map(x=>`<div class="card">${x.date}: ${x.weight} kg</div>`).join("")}
+    ${weightChart(h)}
+
+    <button onclick="animalList('${type}')">⬅ Back</button>
   `;
 }
 
-function expenseReport(){
-  let c={};
-  db.expenses.forEach(e=>{
-    c[e.category]=(c[e.category]||0)+e.amount;
-  });
+function addWeight(type,i){
+  let w=Number(nw.value);
+  if(!w) return;
+  db[type][i].history.push({date:today(),weight:w});
+  save(); viewAnimal(type,i);
+}
 
-  document.getElementById("screen").innerHTML=`
-    <h3>Expense Breakdown</h3>
-    ${Object.keys(c).map(k=>`
-      <div class="card">${k}: ${c[k]}</div>
-    `).join("")}
-    <button onclick="window.print()">🖨 Print</button>
-    <button onclick="show('reports')">⬅ Back</button>
-  `;
+function weightChart(h){
+  let m=Math.max(...h.map(x=>x.weight),1);
+  return `<div>${h.map(x=>`
+    <div style="background:#2563eb;color:white;margin:4px;width:${Math.max(15,(x.weight/m)*100)}%">
+      ${x.weight} kg
+    </div>`).join("")}</div>`;
 }
 
 /* =========================
-   (Animals, Finance, Backup)
-   unchanged from working build
+   FINANCE (SAFE)
+========================= */
+
+function newInvoice(){
+  document.getElementById("screen").innerHTML=`
+    <input id="amt" type="number" placeholder="Invoice amount">
+    <button onclick="saveInvoice()">Save</button>
+    <button onclick="show('finance')">⬅ Back</button>
+  `;
+}
+
+function saveInvoice(){
+  let amt=Number(amt.value);
+  if(!amt) return alert("Enter amount");
+
+  db.invoices.push({
+    number:"INV-"+(db.invoices.length+1),
+    total:amt,
+    paid:0,
+    balance:amt,
+    payments:[],
+    status:"UNPAID"
+  });
+  save(); show("finance");
+}
+
+function viewInvoice(i){
+  let inv=db.invoices[i];
+  document.getElementById("screen").innerHTML=`
+    <h3>${inv.number}</h3>
+    <div class="card">Total: ${inv.total}</div>
+    <div class="card">Paid: ${inv.paid}</div>
+    <div class="card">Balance: ${inv.balance}</div>
+    <div class="card">Status: ${inv.status}</div>
+
+    <input id="pay" type="number" placeholder="Payment">
+    <button onclick="addPayment(${i})">Add Payment</button>
+
+    ${inv.payments.map(p=>`
+      <div class="card">${p.date}: ${p.amount}</div>
+    `).join("")}
+
+    <button onclick="show('finance')">⬅ Back</button>
+  `;
+}
+
+function addPayment(i){
+  let a=Number(pay.value);
+  if(!a||a>db.invoices[i].balance) return alert("Invalid payment");
+
+  let inv=db.invoices[i];
+  inv.payments.push({date:today(),amount:a});
+  inv.paid+=a;
+  inv.balance=inv.total-inv.paid;
+  inv.status=inv.balance===0?"PAID":"PARTIAL";
+  save(); viewInvoice(i);
+}
+
+/* =========================
+   EXPENSES
+========================= */
+
+function newExpense(){
+  document.getElementById("screen").innerHTML=`
+    <input id="cat" placeholder="Category">
+    <input id="amt" type="number" placeholder="Amount">
+    <button onclick="saveExpense()">Save</button>
+    <button onclick="show('finance')">⬅ Back</button>
+  `;
+}
+
+function saveExpense(){
+  if(!cat.value||!amt.value) return;
+  db.expenses.push({date:today(),category:cat.value,amount:Number(amt.value)});
+  save(); show("finance");
+}
+
+function editExpense(i){
+  let e=db.expenses[i];
+  document.getElementById("screen").innerHTML=`
+    <input id="ed" value="${e.date}">
+    <input id="ec" value="${e.category}">
+    <input id="ea" type="number" value="${e.amount}">
+    <button onclick="saveExpenseEdit(${i})">Save</button>
+    <button onclick="show('finance')">⬅ Back</button>
+  `;
+}
+
+function saveExpenseEdit(i){
+  let e=db.expenses[i];
+  e.date=ed.value; e.category=ec.value; e.amount=Number(ea.value);
+  save(); show("finance");
+}
+
+/* =========================
+   BACKUP / RESTORE
+========================= */
+
+function backupData(){
+  let b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download="farm_backup_"+today()+".json";
+  a.click();
+}
+
+function openRestore(){
+  document.getElementById("screen").innerHTML=`
+    <input type="file" id="file">
+    <button onclick="restoreData()">Restore</button>
+    <button onclick="show('dashboard')">⬅ Back</button>
+  `;
+}
+
+function restoreData(){
+  let f=file.files[0];
+  if(!f) return;
+  let r=new FileReader();
+  r.onload=e=>{
+    db=JSON.parse(e.target.result);
+    save(); alert("Restore successful");
+    show("dashboard");
+  };
+  r.readAsText(f);
+}
+
+/* =========================
+   START
 ========================= */
 
 show("dashboard");
