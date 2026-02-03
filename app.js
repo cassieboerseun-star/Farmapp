@@ -25,17 +25,21 @@ function today() {
 ========================= */
 
 function show(screen) {
-  if (screen === "dashboard") {
-    let income = db.invoices.reduce((s, i) => s + i.paid, 0);
-    let expenses = db.expenses.reduce((s, e) => s + e.amount, 0);
-    let net = income - expenses;
+if (screen === "dashboard") {
+  let income = db.invoices.reduce((s, i) => s + i.paid, 0);
+  let expenses = db.expenses.reduce((s, e) => s + e.amount, 0);
+  let net = income - expenses;
 
-    document.getElementById("screen").innerHTML = `
-      <div class="card">Income: ${income}</div>
-      <div class="card">Expenses: ${expenses}</div>
-      <div class="card"><b>Net Profit: ${net}</b></div>
-    `;
-  }
+  document.getElementById("screen").innerHTML = `
+    <div class="card">Income: ${income}</div>
+    <div class="card">Expenses: ${expenses}</div>
+    <div class="card"><b>Net Profit: ${net}</b></div>
+
+    <button onclick="backupData()">⬇ Backup Data</button>
+    <button onclick="restoreScreen()">⬆ Restore Data</button>
+  `;
+}
+
 
   if (screen === "animals") {
     document.getElementById("screen").innerHTML = `
