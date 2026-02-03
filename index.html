@@ -1,26 +1,122 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
   <title>Farm ERP</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ===== POLISH STYLES ===== -->
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 12px;
+    }
+
+    h2, h3 {
+      margin: 10px 0;
+      color: #111827;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 12px;
+      margin: 10px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      margin: 6px 4px 6px 0;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:active {
+      opacity: 0.85;
+    }
+
+    button.danger {
+      background: #dc2626;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0 10px 0;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+    }
+
+    .status-PAID {
+      color: #16a34a;
+      font-weight: bold;
+    }
+
+    .status-PARTIAL {
+      color: #ca8a04;
+      font-weight: bold;
+    }
+
+    .status-UNPAID {
+      color: #dc2626;
+      font-weight: bold;
+    }
+
+    /* ===== BOTTOM NAV ===== */
+    .nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+    }
+
+    .nav button {
+      flex: 1;
+      margin: 0 6px;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 13px;
+    }
+
+    /* ===== PRINT CLEANUP ===== */
+    @media print {
+      button, .nav {
+        display: none;
+      }
+      body {
+        background: white;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<h1>Farm ERP</h1>
+  <!-- ===== MAIN SCREEN ===== -->
+  <div id="screen"></div>
 
-<!-- MAIN NAVIGATION -->
-<button onclick="show('dashboard')">Dashboard</button>
-<button onclick="show('animals')">Animals</button>
-<button onclick="show('finance')">Finance</button>
+  <!-- ===== BOTTOM NAVIGATION ===== -->
+  <div class="nav">
+    <button onclick="show('dashboard')">🏠 Dashboard</button>
+    <button onclick="show('animals')">🐄 Animals</button>
+    <button onclick="show('finance')">💰 Finance</button>
+  </div>
 
+  <!-- ===== APP LOGIC ===== -->
+  <script src="app.js"></script>
 
-
-<!-- APP SCREEN -->
-<div id="screen"></div>
-
-<script src="app.js"></script>
 </body>
 </html>
