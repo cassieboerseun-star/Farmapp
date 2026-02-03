@@ -105,8 +105,14 @@ function viewAnimal(type,i) {
     <div class="card">Latest: ${h[h.length-1].weight} kg</div>
     <input id="nw" type="number" placeholder="New weight">
     <button onclick="addWeight('${type}',${i})">Add Weight</button>
-    ${h.map(x=>`<div class="card">${x.date}: ${x.weight}</div>`).join("")}
-    <button onclick="animalList('${type}')">⬅ Back</button>
+   <h3>Weight History</h3>
+${h.map(x=>`<div class="card">${x.date}: ${x.weight} kg</div>`).join("")}
+
+<h3>Weight Chart</h3>
+${weightChart(h)}
+
+<button onclick="animalList('${type}')">⬅ Back</button>
+
   `;
 }
 
@@ -187,6 +193,22 @@ function saveExpense() {
   if(!c||!a) return;
   db.expenses.push({date:today(),category:c,amount:a});
   save(); show("finance");
+}
+function weightChart(history) {
+  let max = Math.max(...history.map(h => h.weight));
+  return history.map(h => {
+    let width = Math.max(10, (h.weight / max) * 100);
+    return `
+      <div style="
+        background:#2563eb;
+        color:white;
+        margin:4px 0;
+        padding:4px;
+        width:${width}%;
+        border-radius:6px;">
+        ${h.date}: ${h.weight} kg
+      </div>`;
+  }).join("");
 }
 
 show("dashboard");
