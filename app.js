@@ -1,6 +1,5 @@
 /* =========================
-   FARM ERP – FINAL STABLE
-   Backup & Restore FIXED
+   FARM ERP – STABLE + PAYMENTS
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -8,36 +7,29 @@ let db = JSON.parse(localStorage.getItem("farmdb")) || {
   invoices: [], expenses: []
 };
 
-function save() {
-  localStorage.setItem("farmdb", JSON.stringify(db));
-}
-
-function today() {
-  return new Date().toISOString().split("T")[0];
-}
+function save(){ localStorage.setItem("farmdb", JSON.stringify(db)); }
+function today(){ return new Date().toISOString().split("T")[0]; }
 
 /* =========================
    NAVIGATION
 ========================= */
 
-function show(screen) {
-  if (screen === "dashboard") {
-    let income = db.invoices.reduce((s, i) => s + i.paid, 0);
-    let expenses = db.expenses.reduce((s, e) => s + e.amount, 0);
-    let net = income - expenses;
-
-    document.getElementById("screen").innerHTML = `
+function show(screen){
+  if(screen==="dashboard"){
+    let income=db.invoices.reduce((s,i)=>s+i.paid,0);
+    let exp=db.expenses.reduce((s,e)=>s+e.amount,0);
+    document.getElementById("screen").innerHTML=`
       <div class="card">Income: ${income}</div>
-      <div class="card">Expenses: ${expenses}</div>
-      <div class="card"><b>Net Profit: ${net}</b></div>
+      <div class="card">Expenses: ${exp}</div>
+      <div class="card"><b>Net: ${income-exp}</b></div>
 
-      <button onclick="backupData()">⬇ Backup Data</button>
-      <button onclick="openRestore()">⬆ Restore Data</button>
+      <button onclick="backupData()">⬇ Backup</button>
+      <button onclick="openRestore()">⬆ Restore</button>
     `;
   }
 
-  if (screen === "animals") {
-    document.getElementById("screen").innerHTML = `
+  if(screen==="animals"){
+    document.getElementById("screen").innerHTML=`
       <button onclick="animalList('cows')">🐄 Cows</button>
       <button onclick="animalList('sheep')">🐑 Sheep</button>
       <button onclick="animalList('broilers')">🐔 Broilers</button>
@@ -45,20 +37,20 @@ function show(screen) {
     `;
   }
 
-  if (screen === "finance") {
-    document.getElementById("screen").innerHTML = `
+  if(screen==="finance"){
+    document.getElementById("screen").innerHTML=`
       <button onclick="newInvoice()">➕ New Invoice</button>
       <button onclick="newExpense()">➕ New Expense</button>
 
       <h3>Invoices</h3>
-      ${db.invoices.map((i, idx) => `
+      ${db.invoices.map((i,idx)=>`
         <div class="card" onclick="viewInvoice(${idx})">
-          ${i.number} – ${i.status}
+          ${i.number} – ${i.status} – Balance: ${i.balance}
         </div>
       `).join("")}
 
       <h3>Expenses</h3>
-      ${db.expenses.map(e => `
+      ${db.expenses.map(e=>`
         <div class="card">${e.date} – ${e.category}: ${e.amount}</div>
       `).join("")}
     `;
@@ -66,160 +58,83 @@ function show(screen) {
 }
 
 /* =========================
-   BACKUP & RESTORE (FIXED)
+   INVOICES (FIXED)
 ========================= */
 
-function backupData() {
-  const data = JSON.stringify(db, null, 2);
-  const blob = new Blob([data], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "farm_backup_" + today() + ".json";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  URL.revokeObjectURL(url);
-}
-
-function openRestore() {
-  document.getElementById("screen").innerHTML = `
-    <h3>Restore Backup</h3>
-    <input type="file" id="restoreFile" accept=".json">
-    <button onclick="restoreData()">Restore</button>
-    <button onclick="show('dashboard')">⬅ Back</button>
-  `;
-}
-
-function restoreData() {
-  const fileInput = document.getElementById("restoreFile");
-  if (!fileInput.files.length) {
-    alert("Select a backup file");
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    try {
-      db = JSON.parse(e.target.result);
-      save();
-      alert("Restore successful");
-      show("dashboard");
-    } catch {
-      alert("Invalid backup file");
-    }
-  };
-  reader.readAsText(fileInput.files[0]);
-}
-
-/* =========================
-   ANIMALS
-========================= */
-
-function animalList(type) {
-  document.getElementById("screen").innerHTML = `
-    <h2>${type.toUpperCase()}</h2>
-    <input id="name" placeholder="Animal name">
-    <input id="weight" type="number" placeholder="Weight (kg)">
-    <button onclick="addAnimal('${type}')">Add</button>
-
-    ${db[type].map((a, i) => `
-      <div class="card" onclick="viewAnimal('${type}',${i})">
-        ${a.name} – ${a.history[a.history.length - 1].weight} kg
-      </div>
-    `).join("")}
-
-    <button onclick="show('animals')">⬅ Back</button>
-  `;
-}
-
-function addAnimal(type) {
-  const n = document.getElementById("name").value;
-  const w = Number(document.getElementById("weight").value);
-  if (!n || !w) return alert("Enter name and weight");
-
-  db[type].push({
-    name: n,
-    history: [{ date: today(), weight: w }]
-  });
-  save();
-  animalList(type);
-}
-
-function viewAnimal(type, i) {
-  const a = db[type][i];
-  const h = a.history;
-
-  document.getElementById("screen").innerHTML = `
-    <h2>${a.name}</h2>
-    <input id="nw" type="number" placeholder="New weight">
-    <button onclick="addWeight('${type}',${i})">Add Weight</button>
-
-    <h3>History</h3>
-    ${h.map(x => `<div class="card">${x.date}: ${x.weight} kg</div>`).join("")}
-
-    <h3>Chart</h3>
-    ${weightChart(h)}
-
-    <button onclick="animalList('${type}')">⬅ Back</button>
-  `;
-}
-
-function addWeight(type, i) {
-  const w = Number(document.getElementById("nw").value);
-  if (!w) return alert("Enter weight");
-  db[type][i].history.push({ date: today(), weight: w });
-  save();
-  viewAnimal(type, i);
-}
-
-function weightChart(history) {
-  const max = Math.max(...history.map(h => h.weight));
-  return history.map(h => `
-    <div style="background:#2563eb;color:#fff;padding:4px;margin:4px 0;width:${(h.weight / max) * 100}%">
-      ${h.weight} kg
-    </div>
-  `).join("");
-}
-
-/* =========================
-   FINANCE
-========================= */
-
-function newInvoice() {
-  document.getElementById("screen").innerHTML = `
+function newInvoice(){
+  document.getElementById("screen").innerHTML=`
     <input id="amt" type="number" placeholder="Invoice amount">
-    <button onclick="saveInvoice()">Save</button>
+    <button onclick="saveInvoice()">Save Invoice</button>
     <button onclick="show('finance')">⬅ Back</button>
   `;
 }
 
-function saveInvoice() {
-  const amt = Number(document.getElementById("amt").value);
-  if (!amt) return alert("Enter amount");
+function saveInvoice(){
+  let amt=Number(document.getElementById("amt").value);
+  if(!amt) return alert("Enter amount");
+
   db.invoices.push({
-    number: "INV-" + (db.invoices.length + 1),
-    total: amt,
-    paid: 0,
-    status: "UNPAID"
+    number:"INV-"+(db.invoices.length+1),
+    total:amt,
+    paid:0,
+    balance:amt,
+    payments:[],
+    status:"UNPAID"
   });
+
   save();
   show("finance");
 }
 
-function viewInvoice(i) {
-  const inv = db.invoices[i];
-  document.getElementById("screen").innerHTML = `
-    <div class="card">${inv.number}</div>
+function viewInvoice(i){
+  let inv=db.invoices[i];
+
+  document.getElementById("screen").innerHTML=`
+    <h3>${inv.number}</h3>
     <div class="card">Total: ${inv.total}</div>
+    <div class="card">Paid: ${inv.paid}</div>
+    <div class="card">Balance: ${inv.balance}</div>
+    <div class="card">Status: ${inv.status}</div>
+
+    <input id="pay" type="number" placeholder="Payment amount">
+    <button onclick="addPayment(${i})">Add Payment</button>
+
+    <h4>Payment History</h4>
+    ${inv.payments.map(p=>`
+      <div class="card">${p.date} – ${p.amount}</div>
+    `).join("")}
+
     <button onclick="show('finance')">⬅ Back</button>
   `;
 }
 
-function newExpense() {
-  document.getElementById("screen").innerHTML = `
+function addPayment(i){
+  let amt=Number(document.getElementById("pay").value);
+  if(!amt) return alert("Enter payment");
+
+  let inv=db.invoices[i];
+
+  inv.payments.push({date:today(),amount:amt});
+  inv.paid+=amt;
+  inv.balance=inv.total-inv.paid;
+
+  if(inv.balance<=0){
+    inv.balance=0;
+    inv.status="PAID";
+  }else{
+    inv.status="PARTIAL";
+  }
+
+  save();
+  viewInvoice(i);
+}
+
+/* =========================
+   EXPENSES
+========================= */
+
+function newExpense(){
+  document.getElementById("screen").innerHTML=`
     <input id="cat" placeholder="Category">
     <input id="amt" type="number" placeholder="Amount">
     <button onclick="saveExpense()">Save</button>
@@ -227,13 +142,44 @@ function newExpense() {
   `;
 }
 
-function saveExpense() {
-  const c = cat.value;
-  const a = Number(amt.value);
-  if (!c || !a) return;
-  db.expenses.push({ date: today(), category: c, amount: a });
-  save();
-  show("finance");
+function saveExpense(){
+  let c=cat.value,a=Number(amt.value);
+  if(!c||!a) return;
+  db.expenses.push({date:today(),category:c,amount:a});
+  save(); show("finance");
+}
+
+/* =========================
+   BACKUP / RESTORE
+========================= */
+
+function backupData(){
+  let blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="farm_backup_"+today()+".json";
+  a.click();
+}
+
+function openRestore(){
+  document.getElementById("screen").innerHTML=`
+    <input type="file" id="file">
+    <button onclick="restoreData()">Restore</button>
+    <button onclick="show('dashboard')">⬅ Back</button>
+  `;
+}
+
+function restoreData(){
+  let f=document.getElementById("file").files[0];
+  if(!f) return;
+  let r=new FileReader();
+  r.onload=e=>{
+    db=JSON.parse(e.target.result);
+    save();
+    alert("Restore successful");
+    show("dashboard");
+  };
+  r.readAsText(f);
 }
 
 /* =========================
