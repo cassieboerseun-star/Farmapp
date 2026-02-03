@@ -1,47 +1,74 @@
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
-  animals: [], profits: [], expenses: [], inventory: []
+  cows: [],
+  sheep: [],
+  broilers: [],
+  worms: []
 };
 
-function save(){ localStorage.setItem("farmdb", JSON.stringify(db)); }
+function save() {
+  localStorage.setItem("farmdb", JSON.stringify(db));
+}
 
-function show(screen){
-  if(screen==='dashboard'){
-    let profit = db.profits.reduce((a,b)=>a+b,0);
-    let expense = db.expenses.reduce((a,b)=>a+b,0);
-    document.getElementById("screen").innerHTML =
-      `<div class='card'>Profit: ${profit}</div>
-       <div class='card'>Expenses: ${expense}</div>
-       <div class='card'>Net: ${profit-expense}</div>`;
+function show(screen) {
+  if (screen === "dashboard") {
+    document.getElementById("screen").innerHTML = `
+      <div class="card">🐄 Cows: ${db.cows.length}</div>
+      <div class="card">🐑 Sheep: ${db.sheep.length}</div>
+      <div class="card">🐔 Broilers: ${db.broilers.length}</div>
+      <div class="card">🪱 Worm bins: ${db.worms.length}</div>
+    `;
   }
 
-  if(screen==='animals'){
-    document.getElementById("screen").innerHTML =
-      `<input id='aname' placeholder='Animal name'>
-       <input id='aweight' type='number' placeholder='Weight (kg)'>
-       <button onclick='addAnimal()'>Add Animal</button>
-       ${db.animals.map(a=>`<div class='card'>${a.name} - ${a.weight}kg</div>`).join("")}`;
-  }
-
-  if(screen==='finance'){
-    document.getElementById("screen").innerHTML =
-      `<input id='p' type='number' placeholder='Profit'>
-       <button onclick='addProfit()'>Add Profit</button>
-       <input id='e' type='number' placeholder='Expense'>
-       <button onclick='addExpense()'>Add Expense</button>`;
-  }
-
-  if(screen==='inventory'){
-    document.getElementById("screen").innerHTML =
-      `<input id='iname' placeholder='Item name'>
-       <input id='iqty' type='number' placeholder='Quantity'>
-       <button onclick='addItem()'>Add Item</button>
-       ${db.inventory.map(i=>`<div class='card'>${i.name}: ${i.qty}</div>`).join("")}`;
+  if (screen === "animals") {
+    document.getElementById("screen").innerHTML = `
+      <button onclick="animalList('cows')">🐄 Cows</button>
+      <button onclick="animalList('sheep')">🐑 Sheep</button>
+      <button onclick="animalList('broilers')">🐔 Broilers</button>
+      <button onclick="animalList('worms')">🪱 Worms</button>
+    `;
   }
 }
 
-function addAnimal(){ db.animals.push({name:aname.value, weight:aweight.value}); save(); show('animals'); }
-function addProfit(){ db.profits.push(Number(p.value)); save(); show('dashboard'); }
-function addExpense(){ db.expenses.push(Number(e.value)); save(); show('dashboard'); }
-function addItem(){ db.inventory.push({name:iname.value, qty:iqty.value}); save(); show('inventory'); }
+function animalList(type) {
+  const list = db[type];
 
-show('dashboard');
+  document.getElementById("screen").innerHTML = `
+    <h2>${type.toUpperCase()}</h2>
+
+    <input id="name" placeholder="ID / Name">
+    <input id="weight" type="number" placeholder="Weight (kg)">
+    <button onclick="addAnimal('${type}')">Add</button>
+
+    ${list.map(a =>
+      `<div class="card">${a.name} – ${a.weight} kg</div>`
+    ).join("")}
+
+    <button onclick="show('animals')">⬅ Back</button>
+  `;
+}
+
+function addAnimal(type) {
+  const name = document.getElementById("name").value;
+  const weight = document.getElementById("weight").value;
+
+  if (!name || !weight) {
+    alert("Enter name and weight");
+    return;
+  }
+
+  db[type].push({
+    name,
+    weight: Number(weight),
+    history: [
+      {
+        date: new Date().toISOString().split("T")[0],
+        weight: Number(weight)
+      }
+    ]
+  });
+
+  save();
+  animalList(type);
+}
+
+show("dashboard");
