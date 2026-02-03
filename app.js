@@ -179,10 +179,15 @@ function viewInvoice(i){
 
     <button onclick="saveInvoiceEdit(${i})">💾 Save</button>
 
-    ${inv.status==="UNPAID" ? `
-      <button onclick="deleteInvoice(${i})" style="background:#dc2626;color:white">
-        🗑 Delete Invoice
-      </button>` : ""}
+    ${inv.paid===0 && inv.payments.length===0 ? `
+  <button onclick="deleteInvoice(${i})" style="background:#dc2626;color:white">
+    🗑 Delete Invoice
+  </button>` : `
+  <div class="card" style="color:#b45309">
+    🔒 Invoice cannot be deleted (payments exist)
+  </div>
+`}
+
 
     <hr>
     <input id="pay" type="number" placeholder="Payment">
@@ -196,11 +201,17 @@ function viewInvoice(i){
 }
 
 function deleteInvoice(i){
+  let inv = db.invoices[i];
+  if(inv.paid>0 || inv.payments.length>0){
+    alert("Cannot delete invoice with payments");
+    return;
+  }
   if(!confirm("Delete unpaid invoice?")) return;
   db.invoices.splice(i,1);
   save();
   show("finance");
 }
+
 
 function saveInvoiceEdit(i){
   let inv=db.invoices[i];
