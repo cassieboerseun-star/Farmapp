@@ -1,5 +1,6 @@
 /* =========================
-   FARM ERP – STABLE + PAYMENTS
+   FARM ERP – FINAL STABLE
+   Weight Chart FIXED
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -18,6 +19,7 @@ function show(screen){
   if(screen==="dashboard"){
     let income=db.invoices.reduce((s,i)=>s+i.paid,0);
     let exp=db.expenses.reduce((s,e)=>s+e.amount,0);
+
     document.getElementById("screen").innerHTML=`
       <div class="card">Income: ${income}</div>
       <div class="card">Expenses: ${exp}</div>
@@ -45,9 +47,8 @@ function show(screen){
       <h3>Invoices</h3>
       ${db.invoices.map((i,idx)=>`
         <div class="card" onclick="viewInvoice(${idx})">
-          ${i.number} – ${i.status} – Balance: ${i.balance}
-        </div>
-      `).join("")}
+          ${i.number} – ${i.status} – Bal: ${i.balance}
+        </div>`).join("")}
 
       <h3>Expenses</h3>
       ${db.expenses.map(e=>`
@@ -58,7 +59,94 @@ function show(screen){
 }
 
 /* =========================
-   INVOICES (FIXED)
+   ANIMALS
+========================= */
+
+function animalList(type){
+  document.getElementById("screen").innerHTML=`
+    <h2>${type.toUpperCase()}</h2>
+
+    <input id="name" placeholder="Animal ID / Name">
+    <input id="weight" type="number" placeholder="Weight (kg)">
+    <button onclick="addAnimal('${type}')">Add Animal</button>
+
+    ${db[type].map((a,i)=>`
+      <div class="card" onclick="viewAnimal('${type}',${i})">
+        ${a.name} – ${a.history[a.history.length-1].weight} kg
+      </div>`).join("")}
+
+    <button onclick="show('animals')">⬅ Back</button>
+  `;
+}
+
+function addAnimal(type){
+  let n=document.getElementById("name").value;
+  let w=Number(document.getElementById("weight").value);
+  if(!n||!w) return alert("Enter name and weight");
+
+  db[type].push({
+    name:n,
+    history:[{date:today(),weight:w}]
+  });
+
+  save();
+  animalList(type);
+}
+
+function viewAnimal(type,i){
+  let a=db[type][i];
+  let h=a.history;
+
+  document.getElementById("screen").innerHTML=`
+    <h2>${a.name}</h2>
+
+    <input id="nw" type="number" placeholder="New weight">
+    <button onclick="addWeight('${type}',${i})">Add Weight</button>
+
+    <h3>History</h3>
+    ${h.map(x=>`
+      <div class="card">${x.date}: ${x.weight} kg</div>
+    `).join("")}
+
+    <h3>Weight Chart</h3>
+    ${weightChart(h)}
+
+    <button onclick="animalList('${type}')">⬅ Back</button>
+  `;
+}
+
+function addWeight(type,i){
+  let w=Number(document.getElementById("nw").value);
+  if(!w) return alert("Enter weight");
+
+  db[type][i].history.push({date:today(),weight:w});
+  save();
+  viewAnimal(type,i);
+}
+
+/* 🔧 FIXED CHART */
+function weightChart(history){
+  let max = Math.max(...history.map(h=>h.weight), 1);
+
+  return `
+    <div style="width:100%;background:#e5e7eb;padding:6px;border-radius:6px">
+      ${history.map(h=>`
+        <div style="
+          background:#2563eb;
+          color:white;
+          padding:6px;
+          margin:6px 0;
+          border-radius:6px;
+          width:${Math.max(15,(h.weight/max)*100)}%">
+          ${h.weight} kg
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+/* =========================
+   FINANCE (PARTIAL PAYMENTS)
 ========================= */
 
 function newInvoice(){
@@ -99,9 +187,8 @@ function viewInvoice(i){
     <input id="pay" type="number" placeholder="Payment amount">
     <button onclick="addPayment(${i})">Add Payment</button>
 
-    <h4>Payment History</h4>
     ${inv.payments.map(p=>`
-      <div class="card">${p.date} – ${p.amount}</div>
+      <div class="card">${p.date}: ${p.amount}</div>
     `).join("")}
 
     <button onclick="show('finance')">⬅ Back</button>
@@ -110,20 +197,14 @@ function viewInvoice(i){
 
 function addPayment(i){
   let amt=Number(document.getElementById("pay").value);
-  if(!amt) return alert("Enter payment");
+  if(!amt) return;
 
   let inv=db.invoices[i];
-
   inv.payments.push({date:today(),amount:amt});
   inv.paid+=amt;
   inv.balance=inv.total-inv.paid;
-
-  if(inv.balance<=0){
-    inv.balance=0;
-    inv.status="PAID";
-  }else{
-    inv.status="PARTIAL";
-  }
+  inv.status=inv.balance<=0?"PAID":"PARTIAL";
+  if(inv.balance<0) inv.balance=0;
 
   save();
   viewInvoice(i);
@@ -146,7 +227,8 @@ function saveExpense(){
   let c=cat.value,a=Number(amt.value);
   if(!c||!a) return;
   db.expenses.push({date:today(),category:c,amount:a});
-  save(); show("finance");
+  save();
+  show("finance");
 }
 
 /* =========================
@@ -171,7 +253,7 @@ function openRestore(){
 
 function restoreData(){
   let f=document.getElementById("file").files[0];
-  if(!f) return;
+  if(!f) return alert("Select backup");
   let r=new FileReader();
   r.onload=e=>{
     db=JSON.parse(e.target.result);
