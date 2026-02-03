@@ -1,21 +1,8 @@
 /* =========================
-   FARM ERP – DELETE SAFE
+   FARM ERP – STABLE BASELINE
 ========================= */
 
-let db = JSON.parse(localStorage.getItem("farmdb")) || {// 🔧 AUTO-FIX OLD INVOICES (MIGRATION)
-db.invoices.forEach(inv => {
-  if (inv.balance === undefined) {
-    inv.paid = inv.paid || 0;
-    inv.payments = inv.payments || [];
-    inv.balance = inv.total - inv.paid;
-
-    if (inv.paid === 0) inv.status = "UNPAID";
-    else if (inv.balance === 0) inv.status = "PAID";
-    else inv.status = "PARTIAL";
-  }
-});
-save();
-
+let db = JSON.parse(localStorage.getItem("farmdb")) || {
   cows: [], sheep: [], broilers: [], worms: [],
   invoices: [], expenses: []
 };
@@ -31,7 +18,7 @@ function year(d){ return d.slice(0,4); }
 
 function show(screen){
   if(screen==="dashboard"){
-    let income=db.invoices.reduce((s,i)=>s+i.paid,0);
+    let income=db.invoices.reduce((s,i)=>s+(i.paid||0),0);
     let exp=db.expenses.reduce((s,e)=>s+e.amount,0);
 
     document.getElementById("screen").innerHTML=`
@@ -85,7 +72,7 @@ function show(screen){
 }
 
 /* =========================
-   ANIMALS (DELETE ENABLED)
+   ANIMALS
 ========================= */
 
 function animalList(type){
@@ -153,7 +140,7 @@ function weightChart(h){
 }
 
 /* =========================
-   INVOICES (SAFE DELETE)
+   INVOICES
 ========================= */
 
 function newInvoice(){
@@ -193,14 +180,9 @@ function viewInvoice(i){
     <button onclick="saveInvoiceEdit(${i})">💾 Save</button>
 
     ${inv.paid===0 && inv.payments.length===0 ? `
-  <button onclick="deleteInvoice(${i})" style="background:#dc2626;color:white">
-    🗑 Delete Invoice
-  </button>` : `
-  <div class="card" style="color:#b45309">
-    🔒 Invoice cannot be deleted (payments exist)
-  </div>
-`}
-
+      <button onclick="deleteInvoice(${i})" style="background:#dc2626;color:white">
+        🗑 Delete Invoice
+      </button>` : ""}
 
     <hr>
     <input id="pay" type="number" placeholder="Payment">
@@ -214,7 +196,7 @@ function viewInvoice(i){
 }
 
 function deleteInvoice(i){
-  let inv = db.invoices[i];
+  let inv=db.invoices[i];
   if(inv.paid>0 || inv.payments.length>0){
     alert("Cannot delete invoice with payments");
     return;
@@ -224,7 +206,6 @@ function deleteInvoice(i){
   save();
   show("finance");
 }
-
 
 function saveInvoiceEdit(i){
   let inv=db.invoices[i];
@@ -249,7 +230,7 @@ function addPayment(i){
 }
 
 /* =========================
-   EXPENSES (DELETE)
+   EXPENSES
 ========================= */
 
 function newExpense(){
