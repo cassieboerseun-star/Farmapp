@@ -7,7 +7,15 @@ let db = JSON.parse(localStorage.getItem("farmdb")) || {
   cows: [], sheep: [], broilers: [], worms: [],
   customers: [],
   invoices: [],
-  expenses: []
+  expenses: [],
+  settings: {
+    mpesaTill: "123456",
+    bankName: "My Bank",
+    bankAccount: "0123456789"
+  }
+};
+
+  
 };
 
 function save() {
@@ -154,19 +162,34 @@ function saveInvoice() {
 }
 
 function viewInvoice(i) {
-  let inv=db.invoices[i];
+  let inv = db.invoices[i];
   document.getElementById("screen").innerHTML = `
     <h3>Invoice ${inv.number}</h3>
+
     <div class="card">Customer: ${inv.customer}</div>
     <div class="card">Total: ${inv.total}</div>
     <div class="card">Paid: ${inv.paid}</div>
     <div class="card">Status: ${inv.status}</div>
 
-    <input id="pay" type="number" placeholder="Payment">
+    <input id="pay" type="number" placeholder="Payment amount">
     <button onclick="addPayment(${i})">Add Payment</button>
+
+    <h3>Pay via QR</h3>
+    <div class="card">
+      📱 M-Pesa Till: <b>${db.settings.mpesaTill}</b><br>
+      Ref: <b>${inv.number}</b>
+    </div>
+
+    <div class="card">
+      🏦 Bank: <b>${db.settings.bankName}</b><br>
+      Acc: <b>${db.settings.bankAccount}</b><br>
+      Ref: <b>${inv.number}</b>
+    </div>
+
     <button onclick="show('finance')">⬅ Back</button>
   `;
 }
+
 
 function addPayment(i) {
   let p=Number(pay.value);
@@ -210,5 +233,26 @@ function weightChart(history) {
       </div>`;
   }).join("");
 }
+function profitChart() {
+  let income = db.invoices.reduce((s,i)=>s+i.paid,0);
+  let expenses = db.expenses.reduce((s,e)=>s+e.amount,0);
+  let max = Math.max(income, expenses, 1);
+
+  return `
+    <h3>Profit Chart</h3>
+    <div style="background:#16a34a;color:white;padding:6px;width:${income/max*100}%">
+      Income: ${income}
+    </div>
+    <div style="background:#dc2626;color:white;padding:6px;width:${expenses/max*100}%">
+      Expenses: ${expenses}
+    </div>
+  `;
+}
 
 show("dashboard");
+document.getElementById("screen").innerHTML = `
+  <div class="card">Income: ${income}</div>
+  <div class="card">Expenses: ${expenses}</div>
+  <div class="card"><b>Net Profit: ${net}</b></div>
+  ${profitChart()}
+`;
