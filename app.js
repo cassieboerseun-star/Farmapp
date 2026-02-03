@@ -196,19 +196,40 @@ function viewInvoice(i){
 }
 
 function addPayment(i){
-  let amt=Number(document.getElementById("pay").value);
-  if(!amt) return;
+  let amt = Number(document.getElementById("pay").value);
+  if (!amt || amt <= 0) {
+    alert("Enter a valid payment amount");
+    return;
+  }
 
-  let inv=db.invoices[i];
-  inv.payments.push({date:today(),amount:amt});
-  inv.paid+=amt;
-  inv.balance=inv.total-inv.paid;
-  inv.status=inv.balance<=0?"PAID":"PARTIAL";
-  if(inv.balance<0) inv.balance=0;
+  let inv = db.invoices[i];
+
+  // prevent over-payment
+  if (amt > inv.balance) {
+    alert("Payment exceeds remaining balance");
+    return;
+  }
+
+  inv.payments.push({
+    date: today(),
+    amount: amt
+  });
+
+  inv.paid = inv.paid + amt;
+  inv.balance = inv.total - inv.paid;
+
+  if (inv.paid === 0) {
+    inv.status = "UNPAID";
+  } else if (inv.paid < inv.total) {
+    inv.status = "PARTIAL";
+  } else {
+    inv.status = "PAID";
+  }
 
   save();
   viewInvoice(i);
 }
+
 
 /* =========================
    EXPENSES
