@@ -179,29 +179,58 @@ function saveInvoice(){
 }
 
 function viewInvoice(i){
-  let inv=db.invoices[i];
-  document.getElementById("screen").innerHTML=`
-    <h3>Edit Invoice</h3>
+  let inv = db.invoices[i];
+  let companyName = localStorage.getItem("companyName") || "";
+  let companyLogo = localStorage.getItem("companyLogo") || "";
 
-    <input id="invnum" value="${inv.number}">
-    <input id="invtotal" type="number" value="${inv.total}">
+  document.getElementById("screen").innerHTML = `
+    <!-- INVOICE HEADER -->
+    <div class="card" style="display:flex;align-items:center;gap:14px">
+      ${companyLogo ? `
+        <img src="${companyLogo}" style="width:80px;height:80px;object-fit:contain;border-radius:12px">
+      ` : ""}
+      <div>
+        <h2 style="margin:0">${companyName}</h2>
+        <div style="color:#6b7280">Invoice</div>
+      </div>
+    </div>
 
-    <div class="card">Paid: ${inv.paid}</div>
-    <div class="card">Balance: ${inv.balance}</div>
-    <div class="card">Status: ${inv.status}</div>
+    <!-- INVOICE DETAILS -->
+    <div class="card">
+      <b>Invoice Number:</b><br>
+      <input id="invnum" value="${inv.number}">
 
-    <button onclick="saveInvoiceEdit(${i})">💾 Save</button>
+      <br><br>
+      <b>Total Amount:</b><br>
+      <input id="invtotal" type="number" value="${inv.total}">
 
-    ${inv.paid===0 && inv.payments.length===0 ? `
-      <button class="danger" onclick="deleteInvoice(${i})">🗑 Delete Invoice</button>
-    ` : ""}
+      <div class="card">Paid: ${inv.paid}</div>
+      <div class="card">Balance: ${inv.balance}</div>
+      <div class="card">
+        Status:
+        <span class="status-${inv.status}">${inv.status}</span>
+      </div>
 
-    <hr>
-    <input id="pay" type="number" placeholder="Payment">
-    <button onclick="addPayment(${i})">➕ Add Payment</button>
+      <button onclick="saveInvoiceEdit(${i})">💾 Save</button>
 
-    ${inv.payments.map(p=>`
-      <div class="card">${p.date}: ${p.amount}</div>`).join("")}
+      ${
+        inv.paid === 0 && inv.payments.length === 0
+          ? `<button class="danger" onclick="deleteInvoice(${i})">🗑 Delete Invoice</button>`
+          : ""
+      }
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="card">
+      <h3>Payments</h3>
+
+      <input id="pay" type="number" placeholder="Payment amount">
+      <button onclick="addPayment(${i})">➕ Add Payment</button>
+
+      ${inv.payments.map(p => `
+        <div class="card">${p.date}: ${p.amount}</div>
+      `).join("") || "<div class='card'>No payments yet</div>"}
+    </div>
 
     <button onclick="show('finance')">⬅ Back</button>
   `;
