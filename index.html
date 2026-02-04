@@ -15,12 +15,11 @@
       background: #f3f4f6;
       margin: 0;
       line-height: 1.4;
-
       padding-top: env(safe-area-inset-top);
       padding-bottom: calc(130px + env(safe-area-inset-bottom));
     }
 
-    /* ===== HEADER (MUCH TALLER) ===== */
+    /* ===== HEADER ===== */
     .header {
       display: flex;
       align-items: center;
@@ -31,20 +30,17 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      min-height: 140px;   /* ⬅ BIG HEADER */
+      min-height: 140px;
     }
 
-    /* ===== VERY LARGE LOGO ===== */
     .logo {
-      width: 90px;        /* ⬅ MUCH BIGGER */
-      height: 90px;       /* ⬅ MUCH BIGGER */
-      border-radius: 15px;
+      width: 110px;
+      height: 110px;
+      border-radius: 18px;
       background: #e5e7eb;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
-      color: #6b7280;
       cursor: pointer;
       overflow: hidden;
       flex-shrink: 0;
@@ -57,11 +53,9 @@
       object-fit: contain;
     }
 
-    /* ===== COMPANY NAME ===== */
     .company-name {
       font-size: 22px;
       font-weight: bold;
-      color: #111827;
       border: none;
       outline: none;
       width: 100%;
@@ -72,23 +66,12 @@
       border-bottom: 3px solid #2563eb;
     }
 
-    /* ===== CONTENT ===== */
-    h2 {
-      font-size: 20px;
-      margin: 10px;
-      color: #111827;
-      border-bottom: 2px solid #e5e7eb;
-      padding-bottom: 6px;
-    }
-
-    h3 {
-      font-size: 16px;
-      margin: 16px 10px 6px;
-      color: #111827;
-    }
+    /* ===== UI ===== */
+    h2 { margin: 10px; }
+    h3 { margin: 10px; }
 
     .card {
-      background: #ffffff;
+      background: #fff;
       border-radius: 12px;
       padding: 14px;
       margin: 12px;
@@ -103,19 +86,18 @@
       padding: 12px;
       margin: 6px;
       font-size: 14px;
-      cursor: pointer;
       min-height: 44px;
+      cursor: pointer;
     }
 
     button.danger { background: #dc2626; }
 
-    input, select {
+    input {
       width: 100%;
       padding: 10px;
-      margin: 6px 0 10px;
+      margin: 6px 0;
       border-radius: 8px;
       border: 1px solid #d1d5db;
-      font-size: 14px;
     }
 
     .status-PAID { color: #16a34a; font-weight: bold; }
@@ -132,7 +114,7 @@
       justify-content: space-around;
       background: #ffffff;
       border-top: 1px solid #e5e7eb;
-      padding: 10px 6px;
+      padding: 10px;
       padding-bottom: calc(10px + env(safe-area-inset-bottom));
     }
 
@@ -140,107 +122,92 @@
       flex: 1;
       margin: 0 6px;
       border-radius: 12px;
-      font-size: 13px;
     }
 
-  @media print {
+    /* ===== PRINT MODE (CRITICAL) ===== */
+    @media print {
 
-  /* Hide app UI */
-  .nav,
-  button,
-  input,
-  select {
-    display: none !important;
-  }
+      .nav,
+      button,
+      input {
+        display: none !important;
+      }
 
-  body {
-    background: white;
-    padding: 0;
-  }
+      body {
+        background: white;
+        padding: 0;
+      }
 
-  /* Invoice container */
-  .invoice-print {
-    padding: 24px;
-    font-size: 14px;
-    color: #000;
-  }
+      .invoice-print {
+        padding: 24px;
+        font-size: 14px;
+        color: #000;
+      }
 
-  .invoice-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    border-bottom: 2px solid #000;
-    padding-bottom: 12px;
-    margin-bottom: 16px;
-  }
+      .invoice-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+      }
 
-  .invoice-header img {
-    width: 100px;
-    height: 100px;
-    object-fit: contain;
-  }
+      .invoice-header img {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+      }
 
-  .invoice-title {
-    font-size: 22px;
-    font-weight: bold;
-  }
+      .invoice-title {
+        font-size: 22px;
+        font-weight: bold;
+      }
 
-  .invoice-section {
-    margin-bottom: 16px;
-  }
+      .invoice-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 6px 0;
+      }
 
-  .invoice-row {
-    display: flex;
-    justify-content: space-between;
-    margin: 6px 0;
-  }
+      .invoice-total {
+        border-top: 2px solid #000;
+        padding-top: 10px;
+        font-weight: bold;
+      }
 
-  .invoice-total {
-    border-top: 2px solid #000;
-    padding-top: 10px;
-    font-weight: bold;
-  }
-
-  .invoice-footer {
-    margin-top: 24px;
-    text-align: center;
-    font-size: 13px;
-  }
-}
-
+      .invoice-footer {
+        margin-top: 24px;
+        text-align: center;
+        font-size: 13px;
+      }
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- ===== HEADER ===== -->
+  <!-- HEADER -->
   <div class="header">
     <div class="logo" onclick="uploadLogo()">
       <img id="logoImg" style="display:none">
       <span id="logoText">LOGO</span>
     </div>
-
-    <input
-      id="companyName"
-      class="company-name"
-      placeholder="Your Farm / Company Name"
-      oninput="saveCompanyName()"
-    >
+    <input id="companyName" class="company-name"
+           placeholder="Company Name"
+           oninput="saveCompanyName()">
   </div>
 
-  <!-- MAIN CONTENT -->
   <div id="screen"></div>
 
-  <!-- BOTTOM NAV -->
   <div class="nav">
-    <button onclick="show('dashboard')">🏠 Dashboard</button>
-    <button onclick="show('animals')">🐄 Animals</button>
-    <button onclick="show('finance')">💰 Finance</button>
+    <button onclick="show('dashboard')">Dashboard</button>
+    <button onclick="show('animals')">Animals</button>
+    <button onclick="show('finance')">Finance</button>
   </div>
 
   <script src="app.js"></script>
 
-  <!-- HEADER LOGIC -->
   <script>
     const nameInput = document.getElementById("companyName");
     nameInput.value = localStorage.getItem("companyName") || "";
@@ -260,25 +227,20 @@
     }
 
     function uploadLogo(){
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
-
-      input.onchange = () => {
-        const file = input.files[0];
-        if(!file) return;
-
-        const reader = new FileReader();
-        reader.onload = e => {
+      const i = document.createElement("input");
+      i.type = "file";
+      i.accept = "image/*";
+      i.onchange = () => {
+        const r = new FileReader();
+        r.onload = e => {
           localStorage.setItem("companyLogo", e.target.result);
           logoImg.src = e.target.result;
           logoImg.style.display = "block";
           logoText.style.display = "none";
         };
-        reader.readAsDataURL(file);
+        r.readAsDataURL(i.files[0]);
       };
-
-      input.click();
+      i.click();
     }
   </script>
 
