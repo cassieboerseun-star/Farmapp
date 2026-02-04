@@ -13,14 +13,16 @@
       box-sizing: border-box;
     }
 
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-      background: #f3f4f6;
-      margin: 0;
+   body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  background: #f3f4f6;
+  margin: 0;
 
-      /* ✅ CRITICAL SAFE-AREA FIX */
-      padding-bottom: calc(110px + env(safe-area-inset-bottom));
-    }
+  /* ✅ TOP + BOTTOM SAFE AREAS */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
+ 
 
     h2, h3 {
       margin: 10px 0;
