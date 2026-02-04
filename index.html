@@ -4,14 +4,12 @@
   <meta charset="UTF-8">
   <title>Farm ERP</title>
 
-  <!-- ✅ REQUIRED FOR ANDROID SAFE AREAS -->
+  <!-- ANDROID SAFE AREAS -->
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
@@ -19,12 +17,58 @@
       margin: 0;
       line-height: 1.4;
 
-      /* ✅ TOP + BOTTOM SAFE AREAS */
       padding-top: env(safe-area-inset-top);
       padding-bottom: calc(120px + env(safe-area-inset-bottom));
     }
 
-    /* HEADERS */
+    /* ===== HEADER ===== */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #ffffff;
+      padding: 12px;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #6b7280;
+      cursor: pointer;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .company-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #111827;
+      border: none;
+      outline: none;
+      width: 100%;
+    }
+
+    .company-name:focus {
+      border-bottom: 2px solid #2563eb;
+    }
+
+    /* ===== HEADERS ===== */
     h2 {
       font-size: 20px;
       margin: 10px 0;
@@ -39,70 +83,46 @@
       color: #111827;
     }
 
-    /* CARDS */
+    /* ===== CARDS ===== */
     .card {
       background: #ffffff;
       border-radius: 12px;
       padding: 14px;
-      margin: 12px 0;
+      margin: 12px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      transition: transform 0.05s ease, box-shadow 0.1s ease;
     }
 
-    .card + .card {
-      border-top: 1px dashed #e5e7eb;
-    }
-
-    .card:hover {
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    /* BUTTONS */
+    /* ===== BUTTONS ===== */
     button {
       background: #2563eb;
       color: white;
       border: none;
       border-radius: 10px;
       padding: 12px;
-      margin: 6px 4px 6px 0;
+      margin: 6px 4px;
       font-size: 14px;
       cursor: pointer;
       min-height: 44px;
-      transition: transform 0.05s ease, box-shadow 0.1s ease;
     }
 
-    button:active {
-      transform: scale(0.98);
-      opacity: 0.9;
-    }
-
-    button.primary { background: #2563eb; }
-    button.secondary { background: #6b7280; }
-    button.success { background: #16a34a; }
     button.danger { background: #dc2626; }
 
-    /* INPUTS */
+    /* ===== INPUTS ===== */
     input, select {
       width: 100%;
       padding: 10px;
-      margin: 6px 0 10px 0;
+      margin: 6px 0 10px;
       border-radius: 8px;
       border: 1px solid #d1d5db;
       font-size: 14px;
     }
 
-    input:focus, select:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
-    }
-
-    /* STATUS COLORS */
+    /* ===== STATUS COLORS ===== */
     .status-PAID { color: #16a34a; font-weight: bold; }
     .status-PARTIAL { color: #ca8a04; font-weight: bold; }
     .status-UNPAID { color: #dc2626; font-weight: bold; }
 
-    /* BOTTOM NAV */
+    /* ===== BOTTOM NAV ===== */
     .nav {
       position: fixed;
       left: 0;
@@ -123,33 +143,87 @@
       font-size: 13px;
     }
 
-    /* PRINT MODE */
+    /* PRINT */
     @media print {
-      button, .nav {
-        display: none;
-      }
-      body {
-        background: white;
-        padding: 0;
-      }
+      .nav { display: none; }
+      body { background: white; padding: 0; }
     }
   </style>
 </head>
 
 <body>
 
+  <!-- ===== HEADER ===== -->
+  <div class="header">
+    <div class="logo" onclick="uploadLogo()">
+      <img id="logoImg" style="display:none">
+      <span id="logoText">LOGO</span>
+    </div>
+
+    <input
+      id="companyName"
+      class="company-name"
+      placeholder="Your Farm / Company Name"
+      oninput="saveCompanyName()"
+    >
+  </div>
+
   <!-- MAIN CONTENT -->
   <div id="screen"></div>
 
-  <!-- BOTTOM NAVIGATION -->
+  <!-- BOTTOM NAV -->
   <div class="nav">
-    <button class="primary" onclick="show('dashboard')">🏠 Dashboard</button>
-    <button class="primary" onclick="show('animals')">🐄 Animals</button>
-    <button class="primary" onclick="show('finance')">💰 Finance</button>
+    <button onclick="show('dashboard')">🏠 Dashboard</button>
+    <button onclick="show('animals')">🐄 Animals</button>
+    <button onclick="show('finance')">💰 Finance</button>
   </div>
 
   <!-- APP LOGIC -->
   <script src="app.js"></script>
+
+  <!-- ===== HEADER LOGIC ===== -->
+  <script>
+    // Load company name
+    const nameInput = document.getElementById("companyName");
+    nameInput.value = localStorage.getItem("companyName") || "";
+
+    function saveCompanyName(){
+      localStorage.setItem("companyName", nameInput.value);
+    }
+
+    // Load logo
+    const logoImg = document.getElementById("logoImg");
+    const logoText = document.getElementById("logoText");
+    const savedLogo = localStorage.getItem("companyLogo");
+
+    if(savedLogo){
+      logoImg.src = savedLogo;
+      logoImg.style.display = "block";
+      logoText.style.display = "none";
+    }
+
+    function uploadLogo(){
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+
+      input.onchange = () => {
+        const file = input.files[0];
+        if(!file) return;
+
+        const reader = new FileReader();
+        reader.onload = e => {
+          localStorage.setItem("companyLogo", e.target.result);
+          logoImg.src = e.target.result;
+          logoImg.style.display = "block";
+          logoText.style.display = "none";
+        };
+        reader.readAsDataURL(file);
+      };
+
+      input.click();
+    }
+  </script>
 
 </body>
 </html>
