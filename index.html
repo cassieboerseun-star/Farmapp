@@ -143,10 +143,71 @@
       font-size: 13px;
     }
 
-    @media print {
-      .nav { display: none; }
-      body { background: white; padding: 0; }
-    }
+  @media print {
+
+  /* Hide app UI */
+  .nav,
+  button,
+  input,
+  select {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    padding: 0;
+  }
+
+  /* Invoice container */
+  .invoice-print {
+    padding: 24px;
+    font-size: 14px;
+    color: #000;
+  }
+
+  .invoice-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+
+  .invoice-header img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+  }
+
+  .invoice-title {
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  .invoice-section {
+    margin-bottom: 16px;
+  }
+
+  .invoice-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 6px 0;
+  }
+
+  .invoice-total {
+    border-top: 2px solid #000;
+    padding-top: 10px;
+    font-weight: bold;
+  }
+
+  .invoice-footer {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 13px;
+  }
+}
+
   </style>
 </head>
 
