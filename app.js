@@ -235,7 +235,8 @@ function viewInvoice(i){
 
     <!-- ACTIONS -->
     <div class="card">
-      <button onclick="window.print()">🖨 Print Invoice</button>
+     <button onclick="Android.printPage()">🖨 Print Invoice</button>
+
       <button onclick="show('finance')">⬅ Back</button>
     </div>
   `;
