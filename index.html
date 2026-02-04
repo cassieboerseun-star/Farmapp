@@ -69,13 +69,16 @@
       color: #dc2626;
       font-weight: bold;
     }
+/* ✅ ANDROID SAFE AREA FIX */
 body {
-  padding-bottom: 90px; /* prevents nav overlap */
+  padding-bottom: 140px; /* keeps content above phone nav bar */
 }
 
 .nav {
+  bottom: 0;
   padding-bottom: env(safe-area-inset-bottom);
 }
+
 
     /* ===== BOTTOM NAV ===== */
     .nav {
