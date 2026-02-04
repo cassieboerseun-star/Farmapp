@@ -21,58 +21,60 @@
       padding-bottom: calc(120px + env(safe-area-inset-bottom));
     }
 
-    /* ===== HEADER ===== */
+    /* ===== HEADER (TALLER) ===== */
     .header {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       background: #ffffff;
-      padding: 12px;
+      padding: 16px;              /* ⬅ taller header */
       border-bottom: 1px solid #e5e7eb;
       position: sticky;
       top: 0;
       z-index: 10;
+      min-height: 96px;            /* ⬅ guarantees space */
     }
 
+    /* ===== BIG LOGO ===== */
     .logo {
-  width: 64px;          /* ⬅ bigger */
-  height: 64px;         /* ⬅ bigger */
-  border-radius: 12px;
-  background: #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: #6b7280;
-  cursor: pointer;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
+      width: 80px;                /* ⬅ MUCH BIGGER */
+      height: 80px;               /* ⬅ MUCH BIGGER */
+      border-radius: 14px;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: #6b7280;
+      cursor: pointer;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
 
     .logo img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;        /* ⬅ prevents cropping */
     }
 
     .company-name {
-      font-size: 18px;
+      font-size: 20px;            /* ⬅ slightly bigger text */
       font-weight: bold;
       color: #111827;
       border: none;
       outline: none;
       width: 100%;
+      background: transparent;
     }
 
     .company-name:focus {
       border-bottom: 2px solid #2563eb;
     }
 
-    /* ===== HEADERS ===== */
+    /* ===== CONTENT ===== */
     h2 {
       font-size: 20px;
-      margin: 10px 0;
+      margin: 10px;
       color: #111827;
       border-bottom: 2px solid #e5e7eb;
       padding-bottom: 6px;
@@ -80,11 +82,10 @@
 
     h3 {
       font-size: 16px;
-      margin: 16px 0 6px;
+      margin: 16px 10px 6px;
       color: #111827;
     }
 
-    /* ===== CARDS ===== */
     .card {
       background: #ffffff;
       border-radius: 12px;
@@ -93,14 +94,13 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
 
-    /* ===== BUTTONS ===== */
     button {
       background: #2563eb;
       color: white;
       border: none;
       border-radius: 10px;
       padding: 12px;
-      margin: 6px 4px;
+      margin: 6px;
       font-size: 14px;
       cursor: pointer;
       min-height: 44px;
@@ -108,7 +108,6 @@
 
     button.danger { background: #dc2626; }
 
-    /* ===== INPUTS ===== */
     input, select {
       width: 100%;
       padding: 10px;
@@ -118,7 +117,6 @@
       font-size: 14px;
     }
 
-    /* ===== STATUS COLORS ===== */
     .status-PAID { color: #16a34a; font-weight: bold; }
     .status-PARTIAL { color: #ca8a04; font-weight: bold; }
     .status-UNPAID { color: #dc2626; font-weight: bold; }
@@ -144,7 +142,6 @@
       font-size: 13px;
     }
 
-    /* PRINT */
     @media print {
       .nav { display: none; }
       body { background: white; padding: 0; }
@@ -179,12 +176,10 @@
     <button onclick="show('finance')">💰 Finance</button>
   </div>
 
-  <!-- APP LOGIC -->
   <script src="app.js"></script>
 
-  <!-- ===== HEADER LOGIC ===== -->
+  <!-- HEADER LOGIC -->
   <script>
-    // Load company name
     const nameInput = document.getElementById("companyName");
     nameInput.value = localStorage.getItem("companyName") || "";
 
@@ -192,7 +187,6 @@
       localStorage.setItem("companyName", nameInput.value);
     }
 
-    // Load logo
     const logoImg = document.getElementById("logoImg");
     const logoText = document.getElementById("logoText");
     const savedLogo = localStorage.getItem("companyLogo");
