@@ -1,5 +1,6 @@
 /* =========================
    FARM ERP – STABLE BASELINE
+   + ANDROID BACK BUTTON SUPPORT
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -13,6 +14,20 @@ function month(d){ return d.slice(0,7); }
 function year(d){ return d.slice(0,4); }
 
 /* =========================
+   SCREEN TRACKING (ANDROID BACK BUTTON)
+========================= */
+
+// Track current screen for Android back button
+window.currentScreen = "dashboard";
+
+// Wrap show() to track screen changes
+const _originalShow = show;
+show = function(screen){
+  window.currentScreen = screen;
+  _originalShow(screen);
+};
+
+/* =========================
    NAVIGATION
 ========================= */
 
@@ -22,9 +37,9 @@ function show(screen){
     let exp=db.expenses.reduce((s,e)=>s+e.amount,0);
 
     document.getElementById("screen").innerHTML=`
-      <div class="card">Income: ${income}</div>
-      <div class="card">Expenses: ${exp}</div>
-      <div class="card"><b>Net Profit: ${income-exp}</b></div>
+      <div class="card">💰 Income: ${income}</div>
+      <div class="card">💸 Expenses: ${exp}</div>
+      <div class="card"><b>📈 Net Profit: ${income-exp}</b></div>
 
       <button onclick="show('reports')">📊 Reports</button>
       <button onclick="backupData()">⬇ Backup</button>
@@ -49,7 +64,9 @@ function show(screen){
       <h3>Invoices</h3>
       ${db.invoices.map((i,idx)=>`
         <div class="card" onclick="viewInvoice(${idx})">
-          ${i.number} | ${i.status} | Balance: ${i.balance}
+          ${i.number} |
+          <span class="status-${i.status}">${i.status}</span>
+          | Balance: ${i.balance}
         </div>`).join("")}
 
       <h3>Expenses</h3>
@@ -109,10 +126,7 @@ function viewAnimal(type,i){
     ${h.map(x=>`<div class="card">${x.date}: ${x.weight} kg</div>`).join("")}
     ${weightChart(h)}
 
-    <button onclick="deleteAnimal('${type}',${i})" style="background:#dc2626;color:white">
-      🗑 Delete Animal
-    </button>
-
+    <button class="danger" onclick="deleteAnimal('${type}',${i})">🗑 Delete Animal</button>
     <button onclick="animalList('${type}')">⬅ Back</button>
   `;
 }
@@ -120,8 +134,7 @@ function viewAnimal(type,i){
 function deleteAnimal(type,i){
   if(!confirm("Delete this animal permanently?")) return;
   db[type].splice(i,1);
-  save();
-  animalList(type);
+  save(); animalList(type);
 }
 
 function addWeight(type,i){
@@ -180,9 +193,8 @@ function viewInvoice(i){
     <button onclick="saveInvoiceEdit(${i})">💾 Save</button>
 
     ${inv.paid===0 && inv.payments.length===0 ? `
-      <button onclick="deleteInvoice(${i})" style="background:#dc2626;color:white">
-        🗑 Delete Invoice
-      </button>` : ""}
+      <button class="danger" onclick="deleteInvoice(${i})">🗑 Delete Invoice</button>
+    ` : ""}
 
     <hr>
     <input id="pay" type="number" placeholder="Payment">
@@ -203,8 +215,7 @@ function deleteInvoice(i){
   }
   if(!confirm("Delete unpaid invoice?")) return;
   db.invoices.splice(i,1);
-  save();
-  show("finance");
+  save(); show("finance");
 }
 
 function saveInvoiceEdit(i){
@@ -256,9 +267,7 @@ function editExpense(i){
     <input id="ea" type="number" value="${e.amount}">
 
     <button onclick="saveExpenseEdit(${i})">💾 Save</button>
-    <button onclick="deleteExpense(${i})" style="background:#dc2626;color:white">
-      🗑 Delete Expense
-    </button>
+    <button class="danger" onclick="deleteExpense(${i})">🗑 Delete Expense</button>
 
     <button onclick="show('finance')">⬅ Back</button>
   `;
@@ -267,8 +276,7 @@ function editExpense(i){
 function deleteExpense(i){
   if(!confirm("Delete this expense?")) return;
   db.expenses.splice(i,1);
-  save();
-  show("finance");
+  save(); show("finance");
 }
 
 function saveExpenseEdit(i){
