@@ -3,15 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <title>Farm ERP</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- ===== POLISH STYLES ===== -->
+  <!-- ✅ REQUIRED FOR ANDROID SAFE AREAS -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
       background: #f3f4f6;
       margin: 0;
-      padding: 12px;
+
+      /* ✅ CRITICAL SAFE-AREA FIX */
+      padding-bottom: calc(110px + env(safe-area-inset-bottom));
     }
 
     h2, h3 {
@@ -46,7 +54,7 @@
       background: #dc2626;
     }
 
-    input {
+    input, select {
       width: 100%;
       padding: 10px;
       margin: 6px 0 10px 0;
@@ -69,28 +77,22 @@
       color: #dc2626;
       font-weight: bold;
     }
-/* ✅ ANDROID SAFE AREA FIX */
-body {
-  padding-bottom: 140px; /* keeps content above phone nav bar */
-}
 
-.nav {
-  bottom: 0;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-
-    /* ===== BOTTOM NAV ===== */
+    /* ✅ FIXED BOTTOM NAV — SAFE FOR ANDROID */
     .nav {
       position: fixed;
-      bottom: 0;
       left: 0;
       right: 0;
-      background: #ffffff;
-      border-top: 1px solid #e5e7eb;
+      bottom: 0;
+
       display: flex;
       justify-content: space-around;
-      padding: 8px 0;
+
+      background: #ffffff;
+      border-top: 1px solid #e5e7eb;
+
+      padding: 8px 6px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
     }
 
     .nav button {
@@ -101,13 +103,14 @@ body {
       font-size: 13px;
     }
 
-    /* ===== PRINT CLEANUP ===== */
+    /* PRINT CLEANUP */
     @media print {
       button, .nav {
         display: none;
       }
       body {
         background: white;
+        padding-bottom: 0;
       }
     }
   </style>
@@ -115,17 +118,17 @@ body {
 
 <body>
 
-  <!-- ===== MAIN SCREEN ===== -->
+  <!-- MAIN SCREEN -->
   <div id="screen"></div>
 
-  <!-- ===== BOTTOM NAVIGATION ===== -->
+  <!-- BOTTOM NAV -->
   <div class="nav">
     <button onclick="show('dashboard')">🏠 Dashboard</button>
     <button onclick="show('animals')">🐄 Animals</button>
     <button onclick="show('finance')">💰 Finance</button>
   </div>
 
-  <!-- ===== APP LOGIC ===== -->
+  <!-- APP LOGIC -->
   <script src="app.js"></script>
 
 </body>
