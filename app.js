@@ -187,7 +187,8 @@ function viewInvoice(i){
     <!-- INVOICE HEADER -->
     <div class="card" style="display:flex;align-items:center;gap:14px">
       ${companyLogo ? `
-        <img src="${companyLogo}" style="width:80px;height:80px;object-fit:contain;border-radius:12px">
+        <img src="${companyLogo}"
+             style="width:90px;height:90px;object-fit:contain;border-radius:14px">
       ` : ""}
       <div>
         <h2 style="margin:0">${companyName}</h2>
@@ -197,11 +198,11 @@ function viewInvoice(i){
 
     <!-- INVOICE DETAILS -->
     <div class="card">
-      <b>Invoice Number:</b><br>
+      <b>Invoice Number</b><br>
       <input id="invnum" value="${inv.number}">
 
       <br><br>
-      <b>Total Amount:</b><br>
+      <b>Total Amount</b><br>
       <input id="invtotal" type="number" value="${inv.total}">
 
       <div class="card">Paid: ${inv.paid}</div>
@@ -232,41 +233,12 @@ function viewInvoice(i){
       `).join("") || "<div class='card'>No payments yet</div>"}
     </div>
 
-    <button onclick="show('finance')">⬅ Back</button>
+    <!-- ACTIONS -->
+    <div class="card">
+      <button onclick="window.print()">🖨 Print Invoice</button>
+      <button onclick="show('finance')">⬅ Back</button>
+    </div>
   `;
-}
-
-function deleteInvoice(i){
-  let inv=db.invoices[i];
-  if(inv.paid>0 || inv.payments.length>0){
-    alert("Cannot delete invoice with payments");
-    return;
-  }
-  if(!confirm("Delete unpaid invoice?")) return;
-  db.invoices.splice(i,1);
-  save(); show("finance");
-}
-
-function saveInvoiceEdit(i){
-  let inv=db.invoices[i];
-  let t=Number(invtotal.value);
-  if(t<inv.paid) return alert("Total < paid");
-  inv.number=invnum.value;
-  inv.total=t;
-  inv.balance=inv.total-inv.paid;
-  inv.status=inv.paid===0?"UNPAID":inv.balance===0?"PAID":"PARTIAL";
-  save(); viewInvoice(i);
-}
-
-function addPayment(i){
-  let a=Number(pay.value);
-  let inv=db.invoices[i];
-  if(!a||a>inv.balance) return alert("Invalid payment");
-  inv.payments.push({date:today(),amount:a});
-  inv.paid+=a;
-  inv.balance=inv.total-inv.paid;
-  inv.status=inv.balance===0?"PAID":"PARTIAL";
-  save(); viewInvoice(i);
 }
 
 /* =========================
