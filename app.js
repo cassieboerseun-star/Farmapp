@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – STABLE BASELINE
+   FARM ERP – STABLE WORKING BASELINE
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -15,7 +15,7 @@ function today(){ return new Date().toISOString().split("T")[0]; }
 ========================= */
 
 window.currentScreen = "dashboard";
-const _show = show;
+
 function show(screen){
   window.currentScreen = screen;
 
@@ -52,13 +52,43 @@ function show(screen){
       `).join("") || "<div class='card'>No invoices</div>"}
 
       <h3>Expenses</h3>
-      ${db.expenses.map((e,i)=>`
-        <div class="card">
-          ${e.date} – ${e.category}: ${e.amount}
-        </div>
+      ${db.expenses.map(e=>`
+        <div class="card">${e.date} – ${e.category}: ${e.amount}</div>
       `).join("") || "<div class='card'>No expenses</div>"}
     `;
   }
+}
+
+/* =========================
+   ANIMALS (RESTORED)
+========================= */
+
+function animalList(type){
+  document.getElementById("screen").innerHTML = `
+    <h2>${type.toUpperCase()}</h2>
+
+    <input id="aname" placeholder="Animal ID / Name">
+    <input id="aweight" type="number" placeholder="Weight (kg)">
+    <button onclick="addAnimal('${type}')">Add</button>
+
+    ${db[type].map((a,i)=>`
+      <div class="card">
+        ${a.name} – ${a.weight} kg
+      </div>
+    `).join("") || "<div class='card'>No animals</div>"}
+
+    <button onclick="show('animals')">⬅ Back</button>
+  `;
+}
+
+function addAnimal(type){
+  let n = aname.value;
+  let w = Number(aweight.value);
+  if(!n || !w) return alert("Enter name and weight");
+
+  db[type].push({ name: n, weight: w });
+  save();
+  animalList(type);
 }
 
 /* =========================
@@ -145,7 +175,7 @@ function addPayment(i){
   let amt = Number(pay.value);
   if(!amt || amt > inv.balance) return alert("Invalid payment");
 
-  inv.payments.push({date: today(), amount: amt});
+  inv.payments.push({ date: today(), amount: amt });
   inv.paid += amt;
   inv.balance = inv.total - inv.paid;
   inv.status = inv.balance === 0 ? "PAID" : "PARTIAL";
@@ -155,14 +185,14 @@ function addPayment(i){
 }
 
 /* =========================
-   EXPENSES (BASIC)
+   EXPENSES
 ========================= */
 
 function newExpense(){
   let cat = prompt("Category");
   let amt = Number(prompt("Amount"));
   if(!cat || !amt) return;
-  db.expenses.push({date: today(), category: cat, amount: amt});
+  db.expenses.push({ date: today(), category: cat, amount: amt });
   save();
   show("finance");
 }
