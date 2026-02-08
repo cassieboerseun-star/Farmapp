@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – CORE + GRAPH + GROWTH RATE
+   FARM ERP – CORE + GROWTH + ALERTS
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -71,7 +71,7 @@ function show(screen){
 }
 
 /* =========================
-   ANIMALS + GROWTH RATE
+   ANIMALS + ALERTS
 ========================= */
 
 function animalList(type){
@@ -106,6 +106,8 @@ function viewAnimal(type,index){
   screenEl().innerHTML=`
     <h2>${a.name}</h2>
 
+    ${alerts(type,a.weights)}
+
     <label>Name</label>
     <input id="ename" value="${a.name}">
     <button onclick="saveAnimalName('${type}',${index})">💾 Save Name</button>
@@ -124,7 +126,6 @@ function viewAnimal(type,index){
 
     <h3>Weight Graph</h3>
     ${weightGraph(a.weights)}
-
     ${growthInfo(a.weights)}
 
     <button onclick="animalList('${type}')">⬅ Back</button>
@@ -150,7 +151,37 @@ function deleteWeight(type,ai,wi){
 }
 
 /* =========================
-   GRAPH + GRID
+   ALERT LOGIC
+========================= */
+
+function alerts(type,weights){
+  if(weights.length<2) return "";
+
+  let out="";
+  let last=weights[weights.length-1].weight;
+  let prev=weights[weights.length-2].weight;
+
+  if(last < prev){
+    out+=`<div class="card danger">⚠ Weight loss detected</div>`;
+  }
+
+  let first=weights[0];
+  let lastRec=weights[weights.length-1];
+  let days=Math.max(1,(new Date(lastRec.date)-new Date(first.date))/(1000*60*60*24));
+  let gain=lastRec.weight-first.weight;
+  let daily=gain/days;
+
+  let limits={cows:0.2,sheep:0.2,broilers:0.05,worms:0.01};
+
+  if(daily < limits[type]){
+    out+=`<div class="card warning">⚠ Low growth rate (${daily.toFixed(2)} kg/day)</div>`;
+  }
+
+  return out;
+}
+
+/* =========================
+   GRAPH + GROWTH (UNCHANGED)
 ========================= */
 
 function weightGraph(data){
@@ -180,36 +211,25 @@ function weightGraph(data){
   `;
 }
 
-/* =========================
-   GROWTH RATE INFO
-========================= */
-
 function growthInfo(weights){
   if(weights.length<2) return "";
 
   let first=weights[0];
   let last=weights[weights.length-1];
-
-  let d1=new Date(first.date);
-  let d2=new Date(last.date);
-  let days=Math.max(1,(d2-d1)/(1000*60*60*24));
-
+  let days=Math.max(1,(new Date(last.date)-new Date(first.date))/(1000*60*60*24));
   let gain=last.weight-first.weight;
-  let daily=(gain/days).toFixed(2);
-  let percent=((gain/first.weight)*100).toFixed(1);
 
   return `
     <div class="card">
-      <b>Growth Summary</b><br>
       Gain: ${gain.toFixed(1)} kg<br>
-      Avg Daily Gain: ${daily} kg/day<br>
-      Growth Rate: ${percent} %
+      Avg Daily Gain: ${(gain/days).toFixed(2)} kg/day<br>
+      Growth Rate: ${((gain/first.weight)*100).toFixed(1)} %
     </div>
   `;
 }
 
 /* =========================
-   INVOICES & EXPENSES (UNCHANGED)
+   FINANCE (UNCHANGED)
 ========================= */
 
 function newInvoice(){
