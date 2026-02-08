@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – STABLE CORE
+   FARM ERP – CORE + EDIT ANIMAL
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -17,6 +17,10 @@ function save() {
 
 function today() {
   return new Date().toISOString().split("T")[0];
+}
+
+function screenEl() {
+  return document.getElementById("screen");
 }
 
 /* =========================
@@ -57,21 +61,15 @@ function show(screen) {
       `).join("") || "<div class='card'>No invoices</div>"}
 
       <h3>Expenses</h3>
-      ${db.expenses.map((e, i) => `
-        <div class="card">
-          ${e.date} – ${e.category}: ${e.amount}
-        </div>
+      ${db.expenses.map(e => `
+        <div class="card">${e.date} – ${e.category}: ${e.amount}</div>
       `).join("") || "<div class='card'>No expenses</div>"}
     `;
   }
 }
 
-function screenEl() {
-  return document.getElementById("screen");
-}
-
 /* =========================
-   ANIMALS (SIMPLE & WORKING)
+   ANIMALS (EDIT STEP)
 ========================= */
 
 function animalList(type) {
@@ -82,8 +80,10 @@ function animalList(type) {
     <input id="aweight" type="number" placeholder="Weight (kg)">
     <button onclick="addAnimal('${type}')">➕ Add</button>
 
-    ${db[type].map(a => `
-      <div class="card">${a.name} – ${a.weight} kg</div>
+    ${db[type].map((a, i) => `
+      <div class="card" onclick="viewAnimal('${type}', ${i})">
+        ${a.name} – ${a.weight} kg
+      </div>
     `).join("") || "<div class='card'>No animals</div>"}
 
     <button onclick="show('animals')">⬅ Back</button>
@@ -100,8 +100,33 @@ function addAnimal(type) {
   animalList(type);
 }
 
+function viewAnimal(type, index) {
+  let a = db[type][index];
+
+  screenEl().innerHTML = `
+    <h2>Edit Animal</h2>
+
+    <label>Name</label>
+    <input id="ename" value="${a.name}">
+
+    <label>Weight (kg)</label>
+    <input id="eweight" type="number" value="${a.weight}">
+
+    <button onclick="saveAnimal('${type}', ${index})">💾 Save</button>
+    <button onclick="animalList('${type}')">⬅ Back</button>
+  `;
+}
+
+function saveAnimal(type, index) {
+  let a = db[type][index];
+  a.name = ename.value;
+  a.weight = Number(eweight.value);
+  save();
+  animalList(type);
+}
+
 /* =========================
-   INVOICES (WORKING)
+   INVOICES (UNCHANGED)
 ========================= */
 
 function newInvoice() {
@@ -119,13 +144,9 @@ function newInvoice() {
 
 function viewInvoice(i) {
   let inv = db.invoices[i];
-
   screenEl().innerHTML = `
-    <div class="card">
-      <input id="invtotal" type="number" value="${inv.total}">
-      <button onclick="saveInvoice(${i})">💾 Save</button>
-    </div>
-
+    <input id="invtotal" type="number" value="${inv.total}">
+    <button onclick="saveInvoice(${i})">💾 Save</button>
     <button onclick="show('finance')">⬅ Back</button>
   `;
 }
@@ -139,7 +160,7 @@ function saveInvoice(i) {
 }
 
 /* =========================
-   EXPENSES (WORKING)
+   EXPENSES (UNCHANGED)
 ========================= */
 
 function newExpense() {
