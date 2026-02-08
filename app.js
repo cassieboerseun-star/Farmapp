@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – REPORTS ADDED
+   FARM ERP – STABLE BASELINE (NO REPORTS)
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {};
@@ -9,6 +9,14 @@ if(!db.invoices) db.invoices=[];
 if(!db.expenses) db.expenses=[];
 if(!Array.isArray(db.animalTypes)) db.animalTypes=[];
 
+/* ===== AUTO-REGISTER LEGACY TYPES ===== */
+["cows","sheep","broilers","worms"].forEach(t=>{
+  if(Array.isArray(db[t]) && !db.animalTypes.includes(t)){
+    db.animalTypes.push(t);
+  }
+});
+
+/* ===== ENSURE ARRAYS ===== */
 db.animalTypes.forEach(t=>{
   if(!Array.isArray(db[t])) db[t]=[];
 });
@@ -43,9 +51,14 @@ function show(screen){
   if(screen==="animals"){
     screenEl().innerHTML=`
       <h2>Animals</h2>
+
       ${db.animalTypes.map(t=>`
-        <button onclick="animalList('${t}')">${cap(t)}</button>
+        <div style="display:flex;gap:8px">
+          <button onclick="animalList('${t}')">${cap(t)}</button>
+          <button class="danger" onclick="deleteAnimalType('${t}')">🗑</button>
+        </div>
       `).join("")}
+
       <button onclick="addAnimalType()">➕ Add Animal Type</button>
     `;
   }
@@ -56,8 +69,10 @@ function show(screen){
       <button onclick="newExpense()">➕ New Expense</button>
 
       <h3>Invoices</h3>
-      ${db.invoices.map(i=>`
-        <div class="card">${i.number || "INV"} | Paid: ${i.paid||0}</div>
+      ${db.invoices.map((i,idx)=>`
+        <div class="card" onclick="editInvoice(${idx})">
+          ${i.number} | Paid: ${i.paid || 0}
+        </div>
       `).join("") || "<div class='card'>No invoices</div>"}
 
       <h3>Expenses</h3>
@@ -66,58 +81,10 @@ function show(screen){
       `).join("") || "<div class='card'>No expenses</div>"}
     `;
   }
-
-  if(screen==="reports"){
-    showReports();
-  }
 }
 
 /* =========================
-   REPORTS
-========================= */
-
-function showReports(){
-  let monthly = {};
-  let yearly = {};
-
-  db.invoices.forEach(i=>{
-    if(!i.date) return;
-    let m=i.date.slice(0,7);
-    let y=i.date.slice(0,4);
-    monthly[m]=(monthly[m]||0)+(i.paid||0);
-    yearly[y]=(yearly[y]||0)+(i.paid||0);
-  });
-
-  db.expenses.forEach(e=>{
-    let m=e.date.slice(0,7);
-    let y=e.date.slice(0,4);
-    monthly[m]=(monthly[m]||0)-e.amount;
-    yearly[y]=(yearly[y]||0)-e.amount;
-  });
-
-  screenEl().innerHTML=`
-    <h2>Reports</h2>
-
-    <h3>📅 Monthly Report</h3>
-    ${Object.keys(monthly).sort().map(k=>`
-      <div class="card">
-        ${k} → Net Profit: ${monthly[k]}
-      </div>
-    `).join("") || "<div class='card'>No data</div>"}
-
-    <h3>📆 Annual Report</h3>
-    ${Object.keys(yearly).sort().map(k=>`
-      <div class="card">
-        ${k} → Net Profit: ${yearly[k]}
-      </div>
-    `).join("") || "<div class='card'>No data</div>"}
-
-    <button onclick="show('dashboard')">⬅ Back</button>
-  `;
-}
-
-/* =========================
-   ANIMAL TYPES (BASIC)
+   ANIMAL TYPES
 ========================= */
 
 function addAnimalType(){
@@ -129,6 +96,88 @@ function addAnimalType(){
   db[t]=[];
   save();
   show("animals");
+}
+
+function deleteAnimalType(type){
+  if(!confirm(`Delete ${type} and all its animals?`)) return;
+  db.animalTypes=db.animalTypes.filter(t=>t!==type);
+  delete db[type];
+  save();
+  show("animals");
+}
+
+/* =========================
+   ANIMALS
+========================= */
+
+function animalList(type){
+  screenEl().innerHTML=`
+    <h2>${cap(type)}</h2>
+
+    <input id="aname" placeholder="Name">
+    <input id="aweight" type="number" placeholder="Weight">
+    <button onclick="addAnimal('${type}')">➕ Add</button>
+
+    ${db[type].map((a,i)=>`
+      <div class="card" onclick="viewAnimal('${type}',${i})">
+        ${a.name} – ${a.weights.at(-1).weight} kg
+      </div>
+    `).join("")}
+
+    <button onclick="show('animals')">⬅ Back</button>
+  `;
+}
+
+function addAnimal(type){
+  if(!aname.value||!aweight.value) return;
+  db[type].push({name:aname.value,weights:[{date:today(),weight:Number(aweight.value)}]});
+  save(); animalList(type);
+}
+
+function viewAnimal(type,i){
+  let a=db[type][i];
+  screenEl().innerHTML=`
+    <h2>${a.name}</h2>
+
+    <input id="ename" value="${a.name}">
+    <button onclick="saveAnimalName('${type}',${i})">Save</button>
+
+    <input id="w" type="number" placeholder="Weight">
+    <button onclick="addWeight('${type}',${i})">Add Weight</button>
+
+    ${a.weights.map((x,wi)=>`
+      <div class="card">
+        ${x.date}: ${x.weight}
+        ${a.weights.length>1?`<button onclick="deleteWeight('${type}',${i},${wi})">🗑</button>`:""}
+      </div>
+    `).join("")}
+
+    <button class="danger" onclick="deleteAnimal('${type}',${i})">Delete Animal</button>
+    <button onclick="animalList('${type}')">⬅ Back</button>
+  `;
+}
+
+function saveAnimalName(type,i){
+  db[type][i].name=ename.value;
+  save(); viewAnimal(type,i);
+}
+
+function addWeight(type,i){
+  if(!w.value) return;
+  db[type][i].weights.push({date:today(),weight:Number(w.value)});
+  save(); viewAnimal(type,i);
+}
+
+function deleteWeight(type,i,wi){
+  if(!confirm("Delete weight?")) return;
+  db[type][i].weights.splice(wi,1);
+  save(); viewAnimal(type,i);
+}
+
+function deleteAnimal(type,i){
+  if(!confirm("Delete animal?")) return;
+  db[type].splice(i,1);
+  save(); animalList(type);
 }
 
 /* =========================
@@ -145,15 +194,27 @@ function newInvoice(){
   show("finance");
 }
 
+function editInvoice(i){
+  let inv=db.invoices[i];
+  screenEl().innerHTML=`
+    <h2>${inv.number}</h2>
+    <input id="paid" type="number" value="${inv.paid}">
+    <button onclick="saveInvoice(${i})">Save</button>
+    <button onclick="show('finance')">⬅ Back</button>
+  `;
+}
+
+function saveInvoice(i){
+  db.invoices[i].paid=Number(paid.value);
+  save();
+  show("finance");
+}
+
 function newExpense(){
   let c=prompt("Category");
   let a=Number(prompt("Amount"));
   if(!c||!a) return;
-  db.expenses.push({
-    date:today(),
-    category:c,
-    amount:a
-  });
+  db.expenses.push({date:today(),category:c,amount:a});
   save();
   show("finance");
 }
@@ -162,7 +223,7 @@ function newExpense(){
    HELPERS
 ========================= */
 
-function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 
 /* =========================
    START
