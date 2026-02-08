@@ -166,8 +166,9 @@ function viewAnimal(type,index){
     `).join("")}
 
     ${weightGraph(a.weights)}
-    ${graphInfo(a.weights)}
-    ${growthInfo(a.weights)}
+${graphInfo(a.weights)}
+${growthInfo(a.weights)}
+${growthRate(a.weights)}
 
     <button class="danger" onclick="deleteAnimal('${type}',${index})">🗑 Delete Animal</button>
     <button onclick="animalList('${type}')">⬅ Back</button>
@@ -248,6 +249,30 @@ function emoji(t){
   if(t.includes("broiler")||t.includes("chicken")) return "🐔";
   if(t.includes("worm")) return "🪱";
   return "🐾";
+}
+function growthRate(w){
+  if(w.length < 2) return "";
+
+  let first = w[0];
+  let last = w[w.length - 1];
+
+  let d1 = new Date(first.date);
+  let d2 = new Date(last.date);
+
+  let days = Math.max(1, (d2 - d1) / (1000 * 60 * 60 * 24));
+  let gain = last.weight - first.weight;
+
+  let daily = (gain / days).toFixed(2);
+  let percent = ((gain / first.weight) * 100).toFixed(1);
+
+  return `
+    <div class="card">
+      <b>Growth Rate</b><br>
+      Gain: ${gain.toFixed(1)} kg<br>
+      Avg Daily Gain: ${daily} kg/day<br>
+      Growth: ${percent} %
+    </div>
+  `;
 }
 
 /* =========================
