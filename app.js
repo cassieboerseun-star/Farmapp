@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – FIXED ANIMAL TYPES MIGRATION
+   FARM ERP – ANIMALS FINAL STABLE
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {};
@@ -8,23 +8,27 @@ let db = JSON.parse(localStorage.getItem("farmdb")) || {};
 if(!db.invoices) db.invoices=[];
 if(!db.expenses) db.expenses=[];
 
-/* ===== AUTO-DETECT ANIMAL TYPES ===== */
+/* ===== AUTO-DETECT / INIT ANIMAL TYPES ===== */
 const DEFAULT_TYPES = ["cows","sheep","broilers","worms"];
 
-if(!db.animalTypes){
+if(!Array.isArray(db.animalTypes)){
   db.animalTypes = DEFAULT_TYPES.filter(t => Array.isArray(db[t]));
+  if(db.animalTypes.length === 0) db.animalTypes = [...DEFAULT_TYPES];
 }
 
-/* ===== ENSURE ARRAYS FOR ALL TYPES ===== */
+/* ===== ENSURE ARRAYS FOR TYPES ===== */
 db.animalTypes.forEach(t=>{
-  if(!Array.isArray(db[t])) db[t]=[];
+  if(!Array.isArray(db[t])) db[t] = [];
 });
 
 /* ===== AUTO-MIGRATE OLD ANIMALS ===== */
 db.animalTypes.forEach(t=>{
-  db[t]=db[t].map(a=>{
+  db[t] = db[t].map(a=>{
     if(a.weights) return a;
-    return { name:a.name, weights:[{date:today(),weight:a.weight}] };
+    return {
+      name: a.name,
+      weights: [{ date: today(), weight: a.weight }]
+    };
   });
 });
 
@@ -66,9 +70,7 @@ function show(screen){
 
       <h3>Invoices</h3>
       ${db.invoices.map((i,idx)=>`
-        <div class="card" onclick="viewInvoice(${idx})">
-          ${i.number} | ${i.status} | Balance: ${i.balance}
-        </div>
+        <div class="card">${i.number} | ${i.status}</div>
       `).join("") || "<div class='card'>No invoices</div>"}
 
       <h3>Expenses</h3>
@@ -87,7 +89,7 @@ function addAnimalType(){
   let t=prompt("New animal type (e.g. goats)");
   if(!t) return;
   t=t.toLowerCase().trim();
-  if(db.animalTypes.includes(t)) return alert("Type already exists");
+  if(db.animalTypes.includes(t)) return alert("Type exists");
 
   db.animalTypes.push(t);
   db[t]=[];
@@ -109,7 +111,7 @@ function animalList(type){
 
     ${db[type].map((a,i)=>`
       <div class="card" onclick="viewAnimal('${type}',${i})">
-        ${a.name} – ${a.weights[a.weights.length-1].weight} kg
+        ${a.name} – ${a.weights.at(-1).weight} kg
       </div>
     `).join("") || "<div class='card'>No animals</div>"}
 
@@ -133,12 +135,15 @@ function viewAnimal(type,index){
 
     ${alerts(type,a.weights)}
 
+    <label>Name</label>
     <input id="ename" value="${a.name}">
     <button onclick="saveAnimalName('${type}',${index})">💾 Save Name</button>
 
+    <h3>Add Weight</h3>
     <input id="w" type="number" placeholder="Weight (kg)">
     <button onclick="addWeight('${type}',${index})">➕ Add Weight</button>
 
+    <h3>Weight History</h3>
     ${a.weights.map((x,wi)=>`
       <div class="card" style="display:flex;justify-content:space-between">
         ${x.date}: ${x.weight} kg
@@ -146,7 +151,9 @@ function viewAnimal(type,index){
       </div>
     `).join("")}
 
+    <h3>Weight Graph</h3>
     ${weightGraph(a.weights)}
+    ${graphInfo(a.weights)}
     ${growthInfo(a.weights)}
 
     <button onclick="animalList('${type}')">⬅ Back</button>
@@ -172,7 +179,7 @@ function deleteWeight(type,ai,wi){
 }
 
 /* =========================
-   ALERTS / GRAPH / GROWTH
+   ALERTS
 ========================= */
 
 function alerts(type,weights){
@@ -180,26 +187,77 @@ function alerts(type,weights){
   let out="";
   let last=weights.at(-1).weight;
   let prev=weights.at(-2).weight;
-  if(last<prev) out+=`<div class="card danger">⚠ Weight loss</div>`;
+  if(last<prev) out+=`<div class="card danger">⚠ Weight loss detected</div>`;
+
+  let limits={cows:0.2,sheep:0.2,broilers:0.05,worms:0.01};
+  if(limits[type]){
+    let g=growthCalc(weights).daily;
+    if(g<limits[type]){
+      out+=`<div class="card warning">⚠ Low growth (${g.toFixed(2)} kg/day)</div>`;
+    }
+  }
   return out;
 }
 
+/* =========================
+   GRAPH + GRID
+========================= */
+
 function weightGraph(data){
-  if(data.length<2) return "";
+  if(data.length<2) return "<div class='card'>Add more weights to see graph</div>";
+
+  let w=300,h=180,p=25;
   let max=Math.max(...data.map(d=>d.weight));
   let min=Math.min(...data.map(d=>d.weight));
+
+  let grid="";
+  for(let i=0;i<5;i++){
+    let y=p+(i*(h-p*2)/4);
+    grid+=`<line x1="${p}" x2="${w-p}" y1="${y}" y2="${y}" stroke="#e5e7eb"/>`;
+  }
+
   let pts=data.map((d,i)=>{
-    let x=20+(i/(data.length-1))*260;
-    let y=160-((d.weight-min)/(max-min||1))*120;
+    let x=p+(i/(data.length-1))*(w-p*2);
+    let y=h-p-((d.weight-min)/(max-min||1))*(h-p*2);
     return `${x},${y}`;
   }).join(" ");
-  return `<svg width="100%" height="180"><polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/></svg>`;
+
+  return `
+    <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}">
+      ${grid}
+      <polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/>
+    </svg>
+  `;
+}
+
+function graphInfo(w){
+  return `<div class="card">
+    Latest: ${w.at(-1).weight} kg<br>
+    Min: ${Math.min(...w.map(x=>x.weight))} kg<br>
+    Max: ${Math.max(...w.map(x=>x.weight))} kg<br>
+    Entries: ${w.length}
+  </div>`;
+}
+
+/* =========================
+   GROWTH RATE
+========================= */
+
+function growthCalc(w){
+  let first=w[0], last=w.at(-1);
+  let days=Math.max(1,(new Date(last.date)-new Date(first.date))/(1000*60*60*24));
+  let gain=last.weight-first.weight;
+  return {gain, daily:gain/days, percent:(gain/first.weight)*100};
 }
 
 function growthInfo(w){
   if(w.length<2) return "";
-  let g=w.at(-1).weight-w[0].weight;
-  return `<div class="card">Gain: ${g.toFixed(1)} kg</div>`;
+  let g=growthCalc(w);
+  return `<div class="card">
+    Gain: ${g.gain.toFixed(1)} kg<br>
+    Avg Daily Gain: ${g.daily.toFixed(2)} kg/day<br>
+    Growth Rate: ${g.percent.toFixed(1)} %
+  </div>`;
 }
 
 /* =========================
@@ -220,12 +278,8 @@ function emoji(t){
 ========================= */
 
 function newInvoice(){
-  db.invoices.push({number:"INV-"+(db.invoices.length+1),total:0,paid:0,balance:0,status:"UNPAID"});
+  db.invoices.push({number:"INV-"+(db.invoices.length+1),status:"UNPAID"});
   save(); show("finance");
-}
-
-function viewInvoice(i){
-  screenEl().innerHTML=`<button onclick="show('finance')">⬅ Back</button>`;
 }
 
 function newExpense(){
