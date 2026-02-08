@@ -1,8 +1,9 @@
 /* =========================
-   FARM ERP – CORE + GROWTH + ALERTS
+   FARM ERP – CORE + ALERTS + CUSTOM ANIMAL TYPES
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
+  animalTypes: ["cows","sheep","broilers","worms"],
   cows: [],
   sheep: [],
   broilers: [],
@@ -11,14 +12,16 @@ let db = JSON.parse(localStorage.getItem("farmdb")) || {
   expenses: []
 };
 
+/* ===== ENSURE TYPES EXIST ===== */
+db.animalTypes.forEach(t=>{
+  if(!db[t]) db[t]=[];
+});
+
 /* ===== AUTO-MIGRATE OLD ANIMALS ===== */
-["cows","sheep","broilers","worms"].forEach(t=>{
-  db[t] = db[t].map(a=>{
+db.animalTypes.forEach(t=>{
+  db[t]=db[t].map(a=>{
     if(a.weights) return a;
-    return {
-      name: a.name,
-      weights: [{ date: today(), weight: a.weight }]
-    };
+    return {name:a.name,weights:[{date:today(),weight:a.weight}]};
   });
 });
 
@@ -27,7 +30,7 @@ function today(){ return new Date().toISOString().split("T")[0]; }
 function screenEl(){ return document.getElementById("screen"); }
 
 /* =========================
-   NAVIGATION (UNCHANGED)
+   NAVIGATION
 ========================= */
 
 function show(screen){
@@ -43,10 +46,13 @@ function show(screen){
 
   if(screen==="animals"){
     screenEl().innerHTML=`
-      <button onclick="animalList('cows')">🐄 Cows</button>
-      <button onclick="animalList('sheep')">🐑 Sheep</button>
-      <button onclick="animalList('broilers')">🐔 Broilers</button>
-      <button onclick="animalList('worms')">🪱 Worms</button>
+      <h2>Animals</h2>
+
+      ${db.animalTypes.map(t=>`
+        <button onclick="animalList('${t}')">${emoji(t)} ${cap(t)}</button>
+      `).join("")}
+
+      <button onclick="addAnimalType()">➕ Add Animal Type</button>
     `;
   }
 
@@ -71,12 +77,28 @@ function show(screen){
 }
 
 /* =========================
-   ANIMALS + ALERTS
+   ADD ANIMAL TYPE
+========================= */
+
+function addAnimalType(){
+  let t=prompt("New animal type (e.g. goats)");
+  if(!t) return;
+  t=t.toLowerCase().trim();
+  if(db.animalTypes.includes(t)) return alert("Type already exists");
+
+  db.animalTypes.push(t);
+  db[t]=[];
+  save();
+  show("animals");
+}
+
+/* =========================
+   ANIMALS (UNCHANGED LOGIC)
 ========================= */
 
 function animalList(type){
   screenEl().innerHTML=`
-    <h2>${type.toUpperCase()}</h2>
+    <h2>${cap(type)}</h2>
 
     <input id="aname" placeholder="Animal name / ID">
     <input id="aweight" type="number" placeholder="Starting weight (kg)">
@@ -151,7 +173,7 @@ function deleteWeight(type,ai,wi){
 }
 
 /* =========================
-   ALERT LOGIC
+   ALERTS + GRAPH + GROWTH
 ========================= */
 
 function alerts(type,weights){
@@ -161,7 +183,7 @@ function alerts(type,weights){
   let last=weights[weights.length-1].weight;
   let prev=weights[weights.length-2].weight;
 
-  if(last < prev){
+  if(last<prev){
     out+=`<div class="card danger">⚠ Weight loss detected</div>`;
   }
 
@@ -173,59 +195,52 @@ function alerts(type,weights){
 
   let limits={cows:0.2,sheep:0.2,broilers:0.05,worms:0.01};
 
-  if(daily < limits[type]){
-    out+=`<div class="card warning">⚠ Low growth rate (${daily.toFixed(2)} kg/day)</div>`;
+  if(limits[type]!==undefined && daily<limits[type]){
+    out+=`<div class="card warning">⚠ Low growth (${daily.toFixed(2)} kg/day)</div>`;
   }
 
   return out;
 }
 
-/* =========================
-   GRAPH + GROWTH (UNCHANGED)
-========================= */
-
 function weightGraph(data){
   if(data.length<2) return "<div class='card'>Add more weights to see graph</div>";
-
   let w=300,h=180,pad=25;
   let max=Math.max(...data.map(d=>d.weight));
   let min=Math.min(...data.map(d=>d.weight));
-
   let pts=data.map((d,i)=>{
     let x=pad+(i/(data.length-1))*(w-pad*2);
     let y=h-pad-((d.weight-min)/(max-min||1))*(h-pad*2);
     return `${x},${y}`;
   }).join(" ");
-
-  let grid="";
-  for(let i=0;i<5;i++){
-    let y=pad+(i*(h-pad*2)/4);
-    grid+=`<line x1="${pad}" x2="${w-pad}" y1="${y}" y2="${y}" stroke="#e5e7eb"/>`;
-  }
-
-  return `
-    <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}">
-      ${grid}
-      <polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/>
-    </svg>
-  `;
+  return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/>
+  </svg>`;
 }
 
 function growthInfo(weights){
   if(weights.length<2) return "";
-
   let first=weights[0];
   let last=weights[weights.length-1];
   let days=Math.max(1,(new Date(last.date)-new Date(first.date))/(1000*60*60*24));
   let gain=last.weight-first.weight;
+  return `<div class="card">
+    Gain: ${gain.toFixed(1)} kg<br>
+    Avg Daily Gain: ${(gain/days).toFixed(2)} kg/day<br>
+    Growth Rate: ${((gain/first.weight)*100).toFixed(1)} %
+  </div>`;
+}
 
-  return `
-    <div class="card">
-      Gain: ${gain.toFixed(1)} kg<br>
-      Avg Daily Gain: ${(gain/days).toFixed(2)} kg/day<br>
-      Growth Rate: ${((gain/first.weight)*100).toFixed(1)} %
-    </div>
-  `;
+/* =========================
+   HELPERS
+========================= */
+
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function emoji(t){
+  if(t.includes("cow")) return "🐄";
+  if(t.includes("sheep")) return "🐑";
+  if(t.includes("chicken")||t.includes("broiler")) return "🐔";
+  if(t.includes("worm")) return "🪱";
+  return "🐾";
 }
 
 /* =========================
