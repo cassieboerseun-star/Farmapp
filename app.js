@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – CORE + WEIGHT HISTORY
+   FARM ERP – CORE + WEIGHT HISTORY + DELETE ENTRY
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -80,7 +80,7 @@ function show(screen) {
 }
 
 /* =========================
-   ANIMALS — WEIGHT HISTORY
+   ANIMALS — DELETE WEIGHT ENTRY
 ========================= */
 
 function animalList(type) {
@@ -129,8 +129,15 @@ function viewAnimal(type, index) {
     <button onclick="addWeight('${type}', ${index})">➕ Add Weight</button>
 
     <h3>Weight History</h3>
-    ${a.weights.map(x => `
-      <div class="card">${x.date}: ${x.weight} kg</div>
+    ${a.weights.map((x, wi) => `
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+        <div>${x.date}: ${x.weight} kg</div>
+        ${
+          a.weights.length > 1
+            ? `<button class="danger" onclick="deleteWeight('${type}', ${index}, ${wi})">🗑</button>`
+            : ""
+        }
+      </div>
     `).join("")}
 
     <button onclick="animalList('${type}')">⬅ Back</button>
@@ -153,6 +160,13 @@ function addWeight(type, index) {
   });
   save();
   viewAnimal(type, index);
+}
+
+function deleteWeight(type, ai, wi) {
+  if (!confirm("Delete this weight entry?")) return;
+  db[type][ai].weights.splice(wi, 1);
+  save();
+  viewAnimal(type, ai);
 }
 
 /* =========================
