@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – ANIMALS FINAL STABLE
+   FARM ERP – ANIMALS FINAL (WITH DELETE)
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {};
@@ -69,7 +69,7 @@ function show(screen){
       <button onclick="newExpense()">➕ New Expense</button>
 
       <h3>Invoices</h3>
-      ${db.invoices.map((i,idx)=>`
+      ${db.invoices.map(i=>`
         <div class="card">${i.number} | ${i.status}</div>
       `).join("") || "<div class='card'>No invoices</div>"}
 
@@ -156,6 +156,7 @@ function viewAnimal(type,index){
     ${graphInfo(a.weights)}
     ${growthInfo(a.weights)}
 
+    <button class="danger" onclick="deleteAnimal('${type}',${index})">🗑 Delete Animal</button>
     <button onclick="animalList('${type}')">⬅ Back</button>
   `;
 }
@@ -176,6 +177,13 @@ function deleteWeight(type,ai,wi){
   if(!confirm("Delete this weight entry?")) return;
   db[type][ai].weights.splice(wi,1);
   save(); viewAnimal(type,ai);
+}
+
+function deleteAnimal(type,index){
+  if(!confirm("Delete this animal and all its data?")) return;
+  db[type].splice(index,1);
+  save();
+  animalList(type);
 }
 
 /* =========================
@@ -200,12 +208,11 @@ function alerts(type,weights){
 }
 
 /* =========================
-   GRAPH + GRID
+   GRAPH + GROWTH
 ========================= */
 
 function weightGraph(data){
   if(data.length<2) return "<div class='card'>Add more weights to see graph</div>";
-
   let w=300,h=180,p=25;
   let max=Math.max(...data.map(d=>d.weight));
   let min=Math.min(...data.map(d=>d.weight));
@@ -238,10 +245,6 @@ function graphInfo(w){
     Entries: ${w.length}
   </div>`;
 }
-
-/* =========================
-   GROWTH RATE
-========================= */
 
 function growthCalc(w){
   let first=w[0], last=w.at(-1);
