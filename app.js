@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – ANIMALS FINAL v1.0
+   FARM ERP – ANIMALS FINAL v1.1 (ALL TYPES DELETABLE)
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {};
@@ -8,23 +8,28 @@ let db = JSON.parse(localStorage.getItem("farmdb")) || {};
 if(!db.invoices) db.invoices=[];
 if(!db.expenses) db.expenses=[];
 
-const DEFAULT_TYPES = ["cows","sheep","broilers","worms"];
-
 /* ===== INIT ANIMAL TYPES ===== */
 if(!Array.isArray(db.animalTypes)){
-  db.animalTypes = DEFAULT_TYPES.filter(t => Array.isArray(db[t]));
-  if(db.animalTypes.length===0) db.animalTypes=[...DEFAULT_TYPES];
+  db.animalTypes = [];
 }
 
+/* ===== ENSURE ARRAYS FOR TYPES ===== */
 db.animalTypes.forEach(t=>{
   if(!Array.isArray(db[t])) db[t]=[];
 });
 
-/* ===== MIGRATE OLD DATA ===== */
+/* ===== AUTO-MIGRATE LEGACY DEFAULT TYPES ===== */
+["cows","sheep","broilers","worms"].forEach(t=>{
+  if(Array.isArray(db[t]) && !db.animalTypes.includes(t)){
+    db.animalTypes.push(t);
+  }
+});
+
+/* ===== MIGRATE OLD ANIMALS ===== */
 db.animalTypes.forEach(t=>{
   db[t]=db[t].map(a=>{
     if(a.weights) return a;
-    return {name:a.name,weights:[{date:today(),weight:a.weight}]};
+    return { name:a.name, weights:[{date:today(),weight:a.weight}] };
   });
 });
 
@@ -51,14 +56,15 @@ function show(screen){
     screenEl().innerHTML=`
       <h2>Animals</h2>
 
-      ${db.animalTypes.map(t=>`
-        <div style="display:flex;gap:8px;align-items:center">
-          <button onclick="animalList('${t}')">${emoji(t)} ${cap(t)}</button>
-          ${canDeleteType(t)
-            ? `<button class="danger" onclick="deleteAnimalType('${t}')">🗑</button>`
-            : ""}
-        </div>
-      `).join("")}
+      ${db.animalTypes.length === 0
+        ? "<div class='card'>No animal types. Add one below.</div>"
+        : db.animalTypes.map(t=>`
+          <div style="display:flex;gap:8px;align-items:center">
+            <button onclick="animalList('${t}')">${emoji(t)} ${cap(t)}</button>
+            <button class="danger" onclick="deleteAnimalType('${t}')">🗑</button>
+          </div>
+        `).join("")
+      }
 
       <button onclick="addAnimalType()">➕ Add Animal Type</button>
     `;
@@ -85,10 +91,6 @@ function show(screen){
 /* =========================
    ANIMAL TYPES
 ========================= */
-
-function canDeleteType(type){
-  return !DEFAULT_TYPES.includes(type);
-}
 
 function addAnimalType(){
   let t=prompt("New animal type (e.g. goats)");
@@ -148,7 +150,7 @@ function viewAnimal(type,index){
   screenEl().innerHTML=`
     <h2>${a.name}</h2>
 
-    ${alerts(type,a.weights)}
+    ${alerts(a.weights)}
 
     <input id="ename" value="${a.name}">
     <button onclick="saveAnimalName('${type}',${index})">💾 Save Name</button>
@@ -197,15 +199,14 @@ function deleteAnimal(type,index){
 }
 
 /* =========================
-   ALERTS + GRAPH + GROWTH
+   ALERTS / GRAPH / GROWTH
 ========================= */
 
-function alerts(type,w){
+function alerts(w){
   if(w.length<2) return "";
-  let out="";
-  if(w.at(-1).weight<w.at(-2).weight)
-    out+=`<div class="card danger">⚠ Weight loss detected</div>`;
-  return out;
+  if(w.at(-1).weight < w.at(-2).weight)
+    return `<div class="card danger">⚠ Weight loss detected</div>`;
+  return "";
 }
 
 function weightGraph(data){
@@ -217,7 +218,9 @@ function weightGraph(data){
     let y=160-((d.weight-min)/(max-min||1))*120;
     return `${x},${y}`;
   }).join(" ");
-  return `<svg width="100%" height="180"><polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/></svg>`;
+  return `<svg width="100%" height="180">
+    <polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/>
+  </svg>`;
 }
 
 function graphInfo(w){
@@ -230,8 +233,8 @@ function graphInfo(w){
 
 function growthInfo(w){
   if(w.length<2) return "";
-  let g=w.at(-1).weight-w[0].weight;
-  return `<div class="card">Gain: ${g.toFixed(1)} kg</div>`;
+  let gain=w.at(-1).weight-w[0].weight;
+  return `<div class="card">Gain: ${gain.toFixed(1)} kg</div>`;
 }
 
 /* =========================
