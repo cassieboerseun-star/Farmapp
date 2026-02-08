@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – STABLE + ANIMALS FIXED
+   FARM ERP – STABLE + DELETE WEIGHT ENTRY
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -62,7 +62,7 @@ function show(screen){
 }
 
 /* =========================
-   ANIMALS (FULLY FIXED)
+   ANIMALS (DELETE WEIGHT ENTRY)
 ========================= */
 
 function animalList(type){
@@ -108,8 +108,15 @@ function viewAnimal(type,i){
     <button onclick="addWeight('${type}',${i})">➕ Add Weight</button>
 
     <h3>Weight History</h3>
-    ${a.weights.map(x=>`
-      <div class="card">${x.date}: ${x.weight} kg</div>
+    ${a.weights.map((x,wi)=>`
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+        <div>${x.date}: ${x.weight} kg</div>
+        ${
+          a.weights.length > 1
+            ? `<button class="danger" onclick="deleteWeight('${type}',${i},${wi})">🗑</button>`
+            : ""
+        }
+      </div>
     `).join("")}
 
     <h3>Weight Chart</h3>
@@ -133,6 +140,13 @@ function addWeight(type,i){
   db[type][i].weights.push({ date: today(), weight: w });
   save();
   viewAnimal(type,i);
+}
+
+function deleteWeight(type,ai,wi){
+  if(!confirm("Delete this weight entry?")) return;
+  db[type][ai].weights.splice(wi,1);
+  save();
+  viewAnimal(type,ai);
 }
 
 function deleteAnimal(type,i){
@@ -161,9 +175,8 @@ function weightChart(data){
 /* =========================
    INVOICES (UNCHANGED)
 ========================= */
-/* (left exactly as you confirmed working) */
 
-function newInvoice(){ /* unchanged */ 
+function newInvoice(){
   db.invoices.push({
     number:"INV-"+(db.invoices.length+1),
     total:0,paid:0,balance:0,payments:[],status:"UNPAID"
@@ -171,7 +184,7 @@ function newInvoice(){ /* unchanged */
   save(); show("finance");
 }
 
-function viewInvoice(i){ /* unchanged */ 
+function viewInvoice(i){
   let inv=db.invoices[i];
   let cn=localStorage.getItem("companyName")||"";
   let cl=localStorage.getItem("companyLogo")||"";
@@ -203,6 +216,34 @@ function viewInvoice(i){ /* unchanged */
       <button onclick="show('finance')">⬅ Back</button>
     </div>
   `;
+}
+
+function saveInvoiceEdit(i){
+  let inv=db.invoices[i];
+  let t=Number(invtotal.value);
+  if(t<inv.paid)return alert("Total < paid");
+  inv.number=invnum.value;
+  inv.total=t;
+  inv.balance=inv.total-inv.paid;
+  inv.status=inv.balance===0?"PAID":inv.paid===0?"UNPAID":"PARTIAL";
+  save(); viewInvoice(i);
+}
+
+function addPayment(i){
+  let inv=db.invoices[i];
+  let a=Number(pay.value);
+  if(!a||a>inv.balance)return alert("Invalid payment");
+  inv.payments.push({date:today(),amount:a});
+  inv.paid+=a;
+  inv.balance=inv.total-inv.paid;
+  inv.status=inv.balance===0?"PAID":"PARTIAL";
+  save(); viewInvoice(i);
+}
+
+function deleteInvoice(i){
+  if(!confirm("Delete unpaid invoice?"))return;
+  db.invoices.splice(i,1);
+  save(); show("finance");
 }
 
 /* =========================
