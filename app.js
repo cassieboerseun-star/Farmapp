@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – CORE + WEIGHT GRAPH (GRID + INFO)
+   FARM ERP – CORE + GRAPH + GROWTH RATE
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -71,7 +71,7 @@ function show(screen){
 }
 
 /* =========================
-   ANIMALS (UNCHANGED LOGIC)
+   ANIMALS + GROWTH RATE
 ========================= */
 
 function animalList(type){
@@ -125,6 +125,8 @@ function viewAnimal(type,index){
     <h3>Weight Graph</h3>
     ${weightGraph(a.weights)}
 
+    ${growthInfo(a.weights)}
+
     <button onclick="animalList('${type}')">⬅ Back</button>
   `;
 }
@@ -148,7 +150,7 @@ function deleteWeight(type,ai,wi){
 }
 
 /* =========================
-   GRAPH WITH GRID + INFO
+   GRAPH + GRID
 ========================= */
 
 function weightGraph(data){
@@ -157,7 +159,6 @@ function weightGraph(data){
   let w=300,h=180,pad=25;
   let max=Math.max(...data.map(d=>d.weight));
   let min=Math.min(...data.map(d=>d.weight));
-  let latest=data[data.length-1].weight;
 
   let pts=data.map((d,i)=>{
     let x=pad+(i/(data.length-1))*(w-pad*2);
@@ -176,12 +177,33 @@ function weightGraph(data){
       ${grid}
       <polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/>
     </svg>
+  `;
+}
 
+/* =========================
+   GROWTH RATE INFO
+========================= */
+
+function growthInfo(weights){
+  if(weights.length<2) return "";
+
+  let first=weights[0];
+  let last=weights[weights.length-1];
+
+  let d1=new Date(first.date);
+  let d2=new Date(last.date);
+  let days=Math.max(1,(d2-d1)/(1000*60*60*24));
+
+  let gain=last.weight-first.weight;
+  let daily=(gain/days).toFixed(2);
+  let percent=((gain/first.weight)*100).toFixed(1);
+
+  return `
     <div class="card">
-      <b>Latest:</b> ${latest} kg<br>
-      <b>Min:</b> ${min} kg<br>
-      <b>Max:</b> ${max} kg<br>
-      <b>Entries:</b> ${data.length}
+      <b>Growth Summary</b><br>
+      Gain: ${gain.toFixed(1)} kg<br>
+      Avg Daily Gain: ${daily} kg/day<br>
+      Growth Rate: ${percent} %
     </div>
   `;
 }
