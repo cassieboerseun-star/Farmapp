@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – CORE + WEIGHT GRAPH
+   FARM ERP – CORE + WEIGHT GRAPH (GRID + INFO)
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -22,36 +22,27 @@ let db = JSON.parse(localStorage.getItem("farmdb")) || {
   });
 });
 
-function save() {
-  localStorage.setItem("farmdb", JSON.stringify(db));
-}
-
-function today() {
-  return new Date().toISOString().split("T")[0];
-}
-
-function screenEl() {
-  return document.getElementById("screen");
-}
+function save(){ localStorage.setItem("farmdb", JSON.stringify(db)); }
+function today(){ return new Date().toISOString().split("T")[0]; }
+function screenEl(){ return document.getElementById("screen"); }
 
 /* =========================
-   NAVIGATION
+   NAVIGATION (UNCHANGED)
 ========================= */
 
-function show(screen) {
-  if (screen === "dashboard") {
-    let income = db.invoices.reduce((s, i) => s + (i.paid || 0), 0);
-    let exp = db.expenses.reduce((s, e) => s + e.amount, 0);
-
-    screenEl().innerHTML = `
+function show(screen){
+  if(screen==="dashboard"){
+    let income=db.invoices.reduce((s,i)=>s+(i.paid||0),0);
+    let exp=db.expenses.reduce((s,e)=>s+e.amount,0);
+    screenEl().innerHTML=`
       <div class="card">💰 Income: ${income}</div>
       <div class="card">💸 Expenses: ${exp}</div>
-      <div class="card"><b>📈 Net Profit: ${income - exp}</b></div>
+      <div class="card"><b>📈 Net Profit: ${income-exp}</b></div>
     `;
   }
 
-  if (screen === "animals") {
-    screenEl().innerHTML = `
+  if(screen==="animals"){
+    screenEl().innerHTML=`
       <button onclick="animalList('cows')">🐄 Cows</button>
       <button onclick="animalList('sheep')">🐑 Sheep</button>
       <button onclick="animalList('broilers')">🐔 Broilers</button>
@@ -59,20 +50,20 @@ function show(screen) {
     `;
   }
 
-  if (screen === "finance") {
-    screenEl().innerHTML = `
+  if(screen==="finance"){
+    screenEl().innerHTML=`
       <button onclick="newInvoice()">➕ New Invoice</button>
       <button onclick="newExpense()">➕ New Expense</button>
 
       <h3>Invoices</h3>
-      ${db.invoices.map((i, idx) => `
+      ${db.invoices.map((i,idx)=>`
         <div class="card" onclick="viewInvoice(${idx})">
           ${i.number} | ${i.status} | Balance: ${i.balance}
         </div>
       `).join("") || "<div class='card'>No invoices</div>"}
 
       <h3>Expenses</h3>
-      ${db.expenses.map(e => `
+      ${db.expenses.map(e=>`
         <div class="card">${e.date} – ${e.category}: ${e.amount}</div>
       `).join("") || "<div class='card'>No expenses</div>"}
     `;
@@ -80,20 +71,20 @@ function show(screen) {
 }
 
 /* =========================
-   ANIMALS + GRAPH
+   ANIMALS (UNCHANGED LOGIC)
 ========================= */
 
-function animalList(type) {
-  screenEl().innerHTML = `
+function animalList(type){
+  screenEl().innerHTML=`
     <h2>${type.toUpperCase()}</h2>
 
     <input id="aname" placeholder="Animal name / ID">
     <input id="aweight" type="number" placeholder="Starting weight (kg)">
     <button onclick="addAnimal('${type}')">➕ Add</button>
 
-    ${db[type].map((a, i) => `
-      <div class="card" onclick="viewAnimal('${type}', ${i})">
-        ${a.name} – ${a.weights[a.weights.length - 1].weight} kg
+    ${db[type].map((a,i)=>`
+      <div class="card" onclick="viewAnimal('${type}',${i})">
+        ${a.name} – ${a.weights[a.weights.length-1].weight} kg
       </div>
     `).join("") || "<div class='card'>No animals</div>"}
 
@@ -101,42 +92,33 @@ function animalList(type) {
   `;
 }
 
-function addAnimal(type) {
-  let n = aname.value;
-  let w = Number(aweight.value);
-  if (!n || !w) return alert("Enter name and weight");
-
-  db[type].push({
-    name: n,
-    weights: [{ date: today(), weight: w }]
-  });
-  save();
-  animalList(type);
+function addAnimal(type){
+  let n=aname.value;
+  let w=Number(aweight.value);
+  if(!n||!w) return alert("Enter name and weight");
+  db[type].push({name:n,weights:[{date:today(),weight:w}]});
+  save(); animalList(type);
 }
 
-function viewAnimal(type, index) {
-  let a = db[type][index];
+function viewAnimal(type,index){
+  let a=db[type][index];
 
-  screenEl().innerHTML = `
+  screenEl().innerHTML=`
     <h2>${a.name}</h2>
 
     <label>Name</label>
     <input id="ename" value="${a.name}">
-    <button onclick="saveAnimalName('${type}', ${index})">💾 Save Name</button>
+    <button onclick="saveAnimalName('${type}',${index})">💾 Save Name</button>
 
     <h3>Add Weight</h3>
     <input id="w" type="number" placeholder="Weight (kg)">
-    <button onclick="addWeight('${type}', ${index})">➕ Add Weight</button>
+    <button onclick="addWeight('${type}',${index})">➕ Add Weight</button>
 
     <h3>Weight History</h3>
-    ${a.weights.map((x, wi) => `
+    ${a.weights.map((x,wi)=>`
       <div class="card" style="display:flex;justify-content:space-between">
         ${x.date}: ${x.weight} kg
-        ${
-          a.weights.length > 1
-            ? `<button class="danger" onclick="deleteWeight('${type}', ${index}, ${wi})">🗑</button>`
-            : ""
-        }
+        ${a.weights.length>1?`<button class="danger" onclick="deleteWeight('${type}',${index},${wi})">🗑</button>`:""}
       </div>
     `).join("")}
 
@@ -147,112 +129,94 @@ function viewAnimal(type, index) {
   `;
 }
 
-function saveAnimalName(type, index) {
-  db[type][index].name = ename.value;
-  save();
-  viewAnimal(type, index);
+function saveAnimalName(type,index){
+  db[type][index].name=ename.value;
+  save(); viewAnimal(type,index);
 }
 
-function addWeight(type, index) {
-  let w = Number(document.getElementById("w").value);
-  if (!w) return alert("Enter weight");
-
-  db[type][index].weights.push({
-    date: today(),
-    weight: w
-  });
-  save();
-  viewAnimal(type, index);
+function addWeight(type,index){
+  let w=Number(document.getElementById("w").value);
+  if(!w) return alert("Enter weight");
+  db[type][index].weights.push({date:today(),weight:w});
+  save(); viewAnimal(type,index);
 }
 
-function deleteWeight(type, ai, wi) {
-  if (!confirm("Delete this weight entry?")) return;
-  db[type][ai].weights.splice(wi, 1);
-  save();
-  viewAnimal(type, ai);
+function deleteWeight(type,ai,wi){
+  if(!confirm("Delete this weight entry?")) return;
+  db[type][ai].weights.splice(wi,1);
+  save(); viewAnimal(type,ai);
 }
 
 /* =========================
-   SVG LINE GRAPH
+   GRAPH WITH GRID + INFO
 ========================= */
 
-function weightGraph(data) {
-  if (data.length < 2)
-    return "<div class='card'>Add more weights to see graph</div>";
+function weightGraph(data){
+  if(data.length<2) return "<div class='card'>Add more weights to see graph</div>";
 
-  let w = 300, h = 160, pad = 20;
-  let max = Math.max(...data.map(d => d.weight));
-  let min = Math.min(...data.map(d => d.weight));
+  let w=300,h=180,pad=25;
+  let max=Math.max(...data.map(d=>d.weight));
+  let min=Math.min(...data.map(d=>d.weight));
+  let latest=data[data.length-1].weight;
 
-  let points = data.map((d, i) => {
-    let x = pad + (i / (data.length - 1)) * (w - pad * 2);
-    let y = h - pad - ((d.weight - min) / (max - min || 1)) * (h - pad * 2);
+  let pts=data.map((d,i)=>{
+    let x=pad+(i/(data.length-1))*(w-pad*2);
+    let y=h-pad-((d.weight-min)/(max-min||1))*(h-pad*2);
     return `${x},${y}`;
   }).join(" ");
 
+  let grid="";
+  for(let i=0;i<5;i++){
+    let y=pad+(i*(h-pad*2)/4);
+    grid+=`<line x1="${pad}" x2="${w-pad}" y1="${y}" y2="${y}" stroke="#e5e7eb"/>`;
+  }
+
   return `
     <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}">
-      <polyline
-        points="${points}"
-        fill="none"
-        stroke="#2563eb"
-        stroke-width="3"
-      />
+      ${grid}
+      <polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/>
     </svg>
+
+    <div class="card">
+      <b>Latest:</b> ${latest} kg<br>
+      <b>Min:</b> ${min} kg<br>
+      <b>Max:</b> ${max} kg<br>
+      <b>Entries:</b> ${data.length}
+    </div>
   `;
 }
 
 /* =========================
-   INVOICES (UNCHANGED)
+   INVOICES & EXPENSES (UNCHANGED)
 ========================= */
 
-function newInvoice() {
-  db.invoices.push({
-    number: "INV-" + (db.invoices.length + 1),
-    total: 0,
-    paid: 0,
-    balance: 0,
-    payments: [],
-    status: "UNPAID"
-  });
-  save();
-  show("finance");
+function newInvoice(){
+  db.invoices.push({number:"INV-"+(db.invoices.length+1),total:0,paid:0,balance:0,payments:[],status:"UNPAID"});
+  save(); show("finance");
 }
 
-function viewInvoice(i) {
-  let inv = db.invoices[i];
-  screenEl().innerHTML = `
+function viewInvoice(i){
+  let inv=db.invoices[i];
+  screenEl().innerHTML=`
     <input id="invtotal" type="number" value="${inv.total}">
     <button onclick="saveInvoice(${i})">💾 Save</button>
     <button onclick="show('finance')">⬅ Back</button>
   `;
 }
 
-function saveInvoice(i) {
-  let inv = db.invoices[i];
-  inv.total = Number(invtotal.value);
-  inv.balance = inv.total - inv.paid;
-  save();
-  show("finance");
+function saveInvoice(i){
+  let inv=db.invoices[i];
+  inv.total=Number(invtotal.value);
+  inv.balance=inv.total-inv.paid;
+  save(); show("finance");
 }
 
-/* =========================
-   EXPENSES (UNCHANGED)
-========================= */
-
-function newExpense() {
-  let c = prompt("Category");
-  let a = Number(prompt("Amount"));
-  if (!c || !a) return;
-
-  db.expenses.push({
-    date: today(),
-    category: c,
-    amount: a
-  });
-
-  save();
-  show("finance");
+function newExpense(){
+  let c=prompt("Category");
+  let a=Number(prompt("Amount"));
+  if(!c||!a) return;
+  db.expenses.push({date:today(),category:c,amount:a});
+  save(); show("finance");
 }
 
 /* =========================
