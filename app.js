@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – CORE + EDIT ANIMAL
+   FARM ERP – CORE + WEIGHT HISTORY
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -10,6 +10,17 @@ let db = JSON.parse(localStorage.getItem("farmdb")) || {
   invoices: [],
   expenses: []
 };
+
+/* ===== AUTO-MIGRATE OLD ANIMALS ===== */
+["cows","sheep","broilers","worms"].forEach(t=>{
+  db[t] = db[t].map(a=>{
+    if(a.weights) return a;
+    return {
+      name: a.name,
+      weights: [{ date: today(), weight: a.weight }]
+    };
+  });
+});
 
 function save() {
   localStorage.setItem("farmdb", JSON.stringify(db));
@@ -69,7 +80,7 @@ function show(screen) {
 }
 
 /* =========================
-   ANIMALS (EDIT STEP)
+   ANIMALS — WEIGHT HISTORY
 ========================= */
 
 function animalList(type) {
@@ -77,12 +88,12 @@ function animalList(type) {
     <h2>${type.toUpperCase()}</h2>
 
     <input id="aname" placeholder="Animal name / ID">
-    <input id="aweight" type="number" placeholder="Weight (kg)">
+    <input id="aweight" type="number" placeholder="Starting weight (kg)">
     <button onclick="addAnimal('${type}')">➕ Add</button>
 
     ${db[type].map((a, i) => `
       <div class="card" onclick="viewAnimal('${type}', ${i})">
-        ${a.name} – ${a.weight} kg
+        ${a.name} – ${a.weights[a.weights.length - 1].weight} kg
       </div>
     `).join("") || "<div class='card'>No animals</div>"}
 
@@ -95,7 +106,10 @@ function addAnimal(type) {
   let w = Number(aweight.value);
   if (!n || !w) return alert("Enter name and weight");
 
-  db[type].push({ name: n, weight: w });
+  db[type].push({
+    name: n,
+    weights: [{ date: today(), weight: w }]
+  });
   save();
   animalList(type);
 }
@@ -104,25 +118,41 @@ function viewAnimal(type, index) {
   let a = db[type][index];
 
   screenEl().innerHTML = `
-    <h2>Edit Animal</h2>
+    <h2>${a.name}</h2>
 
     <label>Name</label>
     <input id="ename" value="${a.name}">
+    <button onclick="saveAnimalName('${type}', ${index})">💾 Save Name</button>
 
-    <label>Weight (kg)</label>
-    <input id="eweight" type="number" value="${a.weight}">
+    <h3>Add Weight</h3>
+    <input id="w" type="number" placeholder="Weight (kg)">
+    <button onclick="addWeight('${type}', ${index})">➕ Add Weight</button>
 
-    <button onclick="saveAnimal('${type}', ${index})">💾 Save</button>
+    <h3>Weight History</h3>
+    ${a.weights.map(x => `
+      <div class="card">${x.date}: ${x.weight} kg</div>
+    `).join("")}
+
     <button onclick="animalList('${type}')">⬅ Back</button>
   `;
 }
 
-function saveAnimal(type, index) {
-  let a = db[type][index];
-  a.name = ename.value;
-  a.weight = Number(eweight.value);
+function saveAnimalName(type, index) {
+  db[type][index].name = ename.value;
   save();
-  animalList(type);
+  viewAnimal(type, index);
+}
+
+function addWeight(type, index) {
+  let w = Number(document.getElementById("w").value);
+  if (!w) return alert("Enter weight");
+
+  db[type][index].weights.push({
+    date: today(),
+    weight: w
+  });
+  save();
+  viewAnimal(type, index);
 }
 
 /* =========================
