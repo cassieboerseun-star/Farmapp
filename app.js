@@ -1,34 +1,30 @@
 /* =========================
-   FARM ERP – ANIMALS FINAL (WITH DELETE)
+   FARM ERP – ANIMALS FINAL v1.0
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {};
 
-/* ===== ENSURE CORE STRUCTURE ===== */
+/* ===== CORE STRUCTURE ===== */
 if(!db.invoices) db.invoices=[];
 if(!db.expenses) db.expenses=[];
 
-/* ===== AUTO-DETECT / INIT ANIMAL TYPES ===== */
 const DEFAULT_TYPES = ["cows","sheep","broilers","worms"];
 
+/* ===== INIT ANIMAL TYPES ===== */
 if(!Array.isArray(db.animalTypes)){
   db.animalTypes = DEFAULT_TYPES.filter(t => Array.isArray(db[t]));
-  if(db.animalTypes.length === 0) db.animalTypes = [...DEFAULT_TYPES];
+  if(db.animalTypes.length===0) db.animalTypes=[...DEFAULT_TYPES];
 }
 
-/* ===== ENSURE ARRAYS FOR TYPES ===== */
 db.animalTypes.forEach(t=>{
-  if(!Array.isArray(db[t])) db[t] = [];
+  if(!Array.isArray(db[t])) db[t]=[];
 });
 
-/* ===== AUTO-MIGRATE OLD ANIMALS ===== */
+/* ===== MIGRATE OLD DATA ===== */
 db.animalTypes.forEach(t=>{
-  db[t] = db[t].map(a=>{
+  db[t]=db[t].map(a=>{
     if(a.weights) return a;
-    return {
-      name: a.name,
-      weights: [{ date: today(), weight: a.weight }]
-    };
+    return {name:a.name,weights:[{date:today(),weight:a.weight}]};
   });
 });
 
@@ -56,7 +52,12 @@ function show(screen){
       <h2>Animals</h2>
 
       ${db.animalTypes.map(t=>`
-        <button onclick="animalList('${t}')">${emoji(t)} ${cap(t)}</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="animalList('${t}')">${emoji(t)} ${cap(t)}</button>
+          ${canDeleteType(t)
+            ? `<button class="danger" onclick="deleteAnimalType('${t}')">🗑</button>`
+            : ""}
+        </div>
       `).join("")}
 
       <button onclick="addAnimalType()">➕ Add Animal Type</button>
@@ -85,14 +86,28 @@ function show(screen){
    ANIMAL TYPES
 ========================= */
 
+function canDeleteType(type){
+  return !DEFAULT_TYPES.includes(type);
+}
+
 function addAnimalType(){
   let t=prompt("New animal type (e.g. goats)");
   if(!t) return;
   t=t.toLowerCase().trim();
-  if(db.animalTypes.includes(t)) return alert("Type exists");
+  if(db.animalTypes.includes(t)) return alert("Type already exists");
 
   db.animalTypes.push(t);
   db[t]=[];
+  save();
+  show("animals");
+}
+
+function deleteAnimalType(type){
+  if(!confirm(`Delete animal type "${type}" and ALL its animals?`)) return;
+
+  db.animalTypes = db.animalTypes.filter(t=>t!==type);
+  delete db[type];
+
   save();
   show("animals");
 }
@@ -135,15 +150,12 @@ function viewAnimal(type,index){
 
     ${alerts(type,a.weights)}
 
-    <label>Name</label>
     <input id="ename" value="${a.name}">
     <button onclick="saveAnimalName('${type}',${index})">💾 Save Name</button>
 
-    <h3>Add Weight</h3>
     <input id="w" type="number" placeholder="Weight (kg)">
     <button onclick="addWeight('${type}',${index})">➕ Add Weight</button>
 
-    <h3>Weight History</h3>
     ${a.weights.map((x,wi)=>`
       <div class="card" style="display:flex;justify-content:space-between">
         ${x.date}: ${x.weight} kg
@@ -151,7 +163,6 @@ function viewAnimal(type,index){
       </div>
     `).join("")}
 
-    <h3>Weight Graph</h3>
     ${weightGraph(a.weights)}
     ${graphInfo(a.weights)}
     ${growthInfo(a.weights)}
@@ -182,85 +193,45 @@ function deleteWeight(type,ai,wi){
 function deleteAnimal(type,index){
   if(!confirm("Delete this animal and all its data?")) return;
   db[type].splice(index,1);
-  save();
-  animalList(type);
+  save(); animalList(type);
 }
 
 /* =========================
-   ALERTS
+   ALERTS + GRAPH + GROWTH
 ========================= */
 
-function alerts(type,weights){
-  if(weights.length<2) return "";
+function alerts(type,w){
+  if(w.length<2) return "";
   let out="";
-  let last=weights.at(-1).weight;
-  let prev=weights.at(-2).weight;
-  if(last<prev) out+=`<div class="card danger">⚠ Weight loss detected</div>`;
-
-  let limits={cows:0.2,sheep:0.2,broilers:0.05,worms:0.01};
-  if(limits[type]){
-    let g=growthCalc(weights).daily;
-    if(g<limits[type]){
-      out+=`<div class="card warning">⚠ Low growth (${g.toFixed(2)} kg/day)</div>`;
-    }
-  }
+  if(w.at(-1).weight<w.at(-2).weight)
+    out+=`<div class="card danger">⚠ Weight loss detected</div>`;
   return out;
 }
 
-/* =========================
-   GRAPH + GROWTH
-========================= */
-
 function weightGraph(data){
-  if(data.length<2) return "<div class='card'>Add more weights to see graph</div>";
-  let w=300,h=180,p=25;
+  if(data.length<2) return "";
   let max=Math.max(...data.map(d=>d.weight));
   let min=Math.min(...data.map(d=>d.weight));
-
-  let grid="";
-  for(let i=0;i<5;i++){
-    let y=p+(i*(h-p*2)/4);
-    grid+=`<line x1="${p}" x2="${w-p}" y1="${y}" y2="${y}" stroke="#e5e7eb"/>`;
-  }
-
   let pts=data.map((d,i)=>{
-    let x=p+(i/(data.length-1))*(w-p*2);
-    let y=h-p-((d.weight-min)/(max-min||1))*(h-p*2);
+    let x=20+(i/(data.length-1))*260;
+    let y=160-((d.weight-min)/(max-min||1))*120;
     return `${x},${y}`;
   }).join(" ");
-
-  return `
-    <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}">
-      ${grid}
-      <polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/>
-    </svg>
-  `;
+  return `<svg width="100%" height="180"><polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="3"/></svg>`;
 }
 
 function graphInfo(w){
   return `<div class="card">
-    Latest: ${w.at(-1).weight} kg<br>
-    Min: ${Math.min(...w.map(x=>x.weight))} kg<br>
-    Max: ${Math.max(...w.map(x=>x.weight))} kg<br>
-    Entries: ${w.length}
+    Latest: ${w.at(-1).weight} kg |
+    Min: ${Math.min(...w.map(x=>x.weight))} |
+    Max: ${Math.max(...w.map(x=>x.weight))}
   </div>`;
-}
-
-function growthCalc(w){
-  let first=w[0], last=w.at(-1);
-  let days=Math.max(1,(new Date(last.date)-new Date(first.date))/(1000*60*60*24));
-  let gain=last.weight-first.weight;
-  return {gain, daily:gain/days, percent:(gain/first.weight)*100};
 }
 
 function growthInfo(w){
   if(w.length<2) return "";
-  let g=growthCalc(w);
-  return `<div class="card">
-    Gain: ${g.gain.toFixed(1)} kg<br>
-    Avg Daily Gain: ${g.daily.toFixed(2)} kg/day<br>
-    Growth Rate: ${g.percent.toFixed(1)} %
-  </div>`;
+  let g=w.at(-1).weight-w[0].weight;
+  return `<div class="card">Gain: ${g.toFixed(1)} kg</div>`;
 }
 
 /* =========================
