@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – CORE + WEIGHT HISTORY + DELETE ENTRY
+   FARM ERP – CORE + WEIGHT GRAPH
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {
@@ -80,7 +80,7 @@ function show(screen) {
 }
 
 /* =========================
-   ANIMALS — DELETE WEIGHT ENTRY
+   ANIMALS + GRAPH
 ========================= */
 
 function animalList(type) {
@@ -130,8 +130,8 @@ function viewAnimal(type, index) {
 
     <h3>Weight History</h3>
     ${a.weights.map((x, wi) => `
-      <div class="card" style="display:flex;justify-content:space-between;align-items:center">
-        <div>${x.date}: ${x.weight} kg</div>
+      <div class="card" style="display:flex;justify-content:space-between">
+        ${x.date}: ${x.weight} kg
         ${
           a.weights.length > 1
             ? `<button class="danger" onclick="deleteWeight('${type}', ${index}, ${wi})">🗑</button>`
@@ -139,6 +139,9 @@ function viewAnimal(type, index) {
         }
       </div>
     `).join("")}
+
+    <h3>Weight Graph</h3>
+    ${weightGraph(a.weights)}
 
     <button onclick="animalList('${type}')">⬅ Back</button>
   `;
@@ -167,6 +170,36 @@ function deleteWeight(type, ai, wi) {
   db[type][ai].weights.splice(wi, 1);
   save();
   viewAnimal(type, ai);
+}
+
+/* =========================
+   SVG LINE GRAPH
+========================= */
+
+function weightGraph(data) {
+  if (data.length < 2)
+    return "<div class='card'>Add more weights to see graph</div>";
+
+  let w = 300, h = 160, pad = 20;
+  let max = Math.max(...data.map(d => d.weight));
+  let min = Math.min(...data.map(d => d.weight));
+
+  let points = data.map((d, i) => {
+    let x = pad + (i / (data.length - 1)) * (w - pad * 2);
+    let y = h - pad - ((d.weight - min) / (max - min || 1)) * (h - pad * 2);
+    return `${x},${y}`;
+  }).join(" ");
+
+  return `
+    <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}">
+      <polyline
+        points="${points}"
+        fill="none"
+        stroke="#2563eb"
+        stroke-width="3"
+      />
+    </svg>
+  `;
 }
 
 /* =========================
