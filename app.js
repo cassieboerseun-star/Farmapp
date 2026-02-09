@@ -42,6 +42,10 @@ function screenEl(){ return document.getElementById("screen"); }
 ========================= */
 
 function show(screen){
+   if(screen === "reports"){
+  showReports();
+}
+
   if(screen==="dashboard"){
     let income=db.invoices.reduce((s,i)=>s+(i.paid||0),0);
     let exp=db.expenses.reduce((s,e)=>s+e.amount,0);
@@ -329,5 +333,73 @@ function newExpense(){
 /* =========================
    START
 ========================= */
+function showReports(){
+  let monthly = {};
+  let yearly = {};
+
+  // Income
+  db.invoices.forEach(i=>{
+    if(!i.date) return;
+    let m = i.date.slice(0,7);
+    let y = i.date.slice(0,4);
+    monthly[m] = (monthly[m] || {income:0, expense:0});
+    yearly[y]  = (yearly[y]  || {income:0, expense:0});
+
+    monthly[m].income += Number(i.paid || 0);
+    yearly[y].income  += Number(i.paid || 0);
+  });
+
+  // Expenses
+  db.expenses.forEach(e=>{
+    if(!e.date) return;
+    let m = e.date.slice(0,7);
+    let y = e.date.slice(0,4);
+    monthly[m] = (monthly[m] || {income:0, expense:0});
+    yearly[y]  = (yearly[y]  || {income:0, expense:0});
+
+    monthly[m].expense += Number(e.amount || 0);
+    yearly[y].expense  += Number(e.amount || 0);
+  });
+
+  screenEl().innerHTML = `
+    <h2>Reports</h2>
+
+    <h3>📅 Monthly Report</h3>
+    ${
+      Object.keys(monthly).length === 0
+      ? "<div class='card'>No data</div>"
+      : Object.keys(monthly).sort().map(k=>{
+          let net = monthly[k].income - monthly[k].expense;
+          return `
+            <div class="card">
+              <b>${k}</b><br>
+              Income: ${monthly[k].income}<br>
+              Expenses: ${monthly[k].expense}<br>
+              <b>Net: ${net}</b>
+            </div>
+          `;
+        }).join("")
+    }
+
+    <h3>📆 Annual Report</h3>
+    ${
+      Object.keys(yearly).length === 0
+      ? "<div class='card'>No data</div>"
+      : Object.keys(yearly).sort().map(k=>{
+          let net = yearly[k].income - yearly[k].expense;
+          return `
+            <div class="card">
+              <b>${k}</b><br>
+              Income: ${yearly[k].income}<br>
+              Expenses: ${yearly[k].expense}<br>
+              <b>Net: ${net}</b>
+            </div>
+          `;
+        }).join("")
+    }
+
+    <button onclick="show('dashboard')">⬅ Back</button>
+  `;
+}
 
 show("dashboard");
