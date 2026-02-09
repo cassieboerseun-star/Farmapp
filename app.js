@@ -209,6 +209,38 @@ function alerts(w){
     return `<div class="card danger">⚠ Weight loss detected</div>`;
   return "";
 }
+function lowGainAlert(type, w){
+  if(w.length < 2) return "";
+
+  let first = w[0];
+  let last = w[w.length - 1];
+
+  let d1 = new Date(first.date);
+  let d2 = new Date(last.date);
+  let days = Math.max(1, (d2 - d1) / (1000 * 60 * 60 * 24));
+  let gain = last.weight - first.weight;
+  let daily = gain / days;
+
+  const limits = {
+    cows: 0.2,
+    sheep: 0.2,
+    broilers: 0.05,
+    worms: 0.01
+  };
+
+  let limit = limits[type] ?? 0.1;
+
+  if(daily < limit){
+    return `
+      <div class="card warning">
+        ⚠ Low growth rate: ${daily.toFixed(2)} kg/day  
+        <br>Expected ≥ ${limit} kg/day
+      </div>
+    `;
+  }
+
+  return "";
+}
 
 function weightGraph(data){
   if(data.length<2) return "";
