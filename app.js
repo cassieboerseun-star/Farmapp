@@ -150,7 +150,9 @@ function viewAnimal(type,index){
   screenEl().innerHTML=`
     <h2>${a.name}</h2>
 
-    ${alerts(a.weights)}
+  ${alerts(a.weights)}
+${lowGainAlert(type, a.weights)}
+ 
 
     <input id="ename" value="${a.name}">
     <button onclick="saveAnimalName('${type}',${index})">💾 Save Name</button>
