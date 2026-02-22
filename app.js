@@ -370,10 +370,20 @@ function showReports(){
 
 function downloadFile(filename, content){
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  // Android & mobile friendly download
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
+
+  // Fallback: open file in new tab if download blocked
+  setTimeout(()=>{
+    window.open(url, "_blank");
+  }, 500);
 }
 
 function exportInvoices(){
