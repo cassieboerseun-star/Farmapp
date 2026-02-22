@@ -1,5 +1,5 @@
 /* =========================
-   FARM ERP – STABLE BASELINE v2
+   FARM ERP – STABLE BASELINE v3 (WITH EXPORT)
 ========================= */
 
 let db = JSON.parse(localStorage.getItem("farmdb")) || {};
@@ -45,9 +45,11 @@ function show(screen){
       <div class="card">💰 Income: ${income}</div>
       <div class="card">💸 Expenses: ${exp}</div>
       <div class="card"><b>📈 Net Profit: ${income-exp}</b></div>
+
       <button onclick="show('animals')">🐄 Animals</button>
       <button onclick="show('finance')">💰 Finance</button>
       <button onclick="show('reports')">📊 Reports</button>
+      <button onclick="show('export')">📤 Export</button>
     `;
   }
 
@@ -90,6 +92,18 @@ function show(screen){
 
   if(screen==="reports"){
     showReports();
+  }
+
+  if(screen==="export"){
+    screenEl().innerHTML=`
+      <h2>Export Data</h2>
+
+      <button onclick="exportInvoices()">📄 Export Invoices</button>
+      <button onclick="exportExpenses()">💸 Export Expenses</button>
+      <button onclick="exportAnimals()">🐄 Export Animals</button>
+
+      <button onclick="show('dashboard')">⬅ Back</button>
+    `;
   }
 }
 
@@ -195,7 +209,7 @@ function deleteAnimal(type,i){
 }
 
 /* =========================
-   GROWTH + ALERTS
+   GROWTH & ALERTS
 ========================= */
 
 function growthRate(w){
@@ -253,7 +267,7 @@ function graphInfo(w){
 }
 
 /* =========================
-   FINANCE EDITING
+   FINANCE
 ========================= */
 
 function newInvoice(){
@@ -315,7 +329,7 @@ function deleteExpense(i){
 }
 
 /* =========================
-   REPORTS (SAFE)
+   REPORTS
 ========================= */
 
 function showReports(){
@@ -341,17 +355,53 @@ function showReports(){
   screenEl().innerHTML=`
     <h2>Reports</h2>
     ${Object.keys(monthly).map(k=>`
-      <div class="card">
-        ${k} → Net: ${monthly[k].i-monthly[k].e}
-      </div>
+      <div class="card">${k} → Net: ${monthly[k].i-monthly[k].e}</div>
     `).join("")}
     ${Object.keys(yearly).map(k=>`
-      <div class="card">
-        ${k} → Net: ${yearly[k].i-yearly[k].e}
-      </div>
+      <div class="card">${k} → Net: ${yearly[k].i-yearly[k].e}</div>
     `).join("")}
     <button onclick="show('dashboard')">⬅ Back</button>
   `;
+}
+
+/* =========================
+   EXPORT CSV
+========================= */
+
+function downloadFile(filename, content){
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
+
+function exportInvoices(){
+  let csv="Number,Date,Paid\n";
+  db.invoices.forEach(i=>{
+    csv+=`${i.number||""},${i.date||""},${i.paid||0}\n`;
+  });
+  downloadFile("invoices.csv",csv);
+}
+
+function exportExpenses(){
+  let csv="Date,Category,Amount\n";
+  db.expenses.forEach(e=>{
+    csv+=`${e.date||""},${e.category||""},${e.amount||0}\n`;
+  });
+  downloadFile("expenses.csv",csv);
+}
+
+function exportAnimals(){
+  let csv="Type,Animal,Date,Weight\n";
+  db.animalTypes.forEach(type=>{
+    db[type].forEach(a=>{
+      a.weights.forEach(w=>{
+        csv+=`${type},${a.name},${w.date},${w.weight}\n`;
+      });
+    });
+  });
+  downloadFile("animals.csv",csv);
 }
 
 /* =========================
